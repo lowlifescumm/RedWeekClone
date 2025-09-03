@@ -93,6 +93,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to create test user - temporary
+  app.post("/api/admin/create-test-user", async (req, res) => {
+    try {
+      const testUser = {
+        username: "efitzhenry",
+        email: "ethan.fitzhenry@example.com",
+        password: "password123",
+        firstName: "Ethan",
+        lastName: "Fitzhenry"
+      };
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(testUser.email);
+      if (existingUser) {
+        return res.status(409).json({ message: "Test user already exists" });
+      }
+      
+      const user = await storage.createUser(testUser);
+      const { password, ...userWithoutPassword } = user;
+      res.status(201).json({ 
+        message: "Test user created successfully", 
+        user: userWithoutPassword,
+        credentials: {
+          username: testUser.username,
+          email: testUser.email,
+          password: testUser.password
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create test user" });
+    }
+  });
+
   // User routes
   app.post("/api/users/register", async (req, res) => {
     try {
