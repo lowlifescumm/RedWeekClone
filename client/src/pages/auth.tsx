@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { insertUserSchema } from "@shared/schema";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.string().min(1, "Email or username is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -138,11 +138,11 @@ export default function Auth() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>Email or Username</FormLabel>
                           <FormControl>
                             <Input 
-                              type="email" 
-                              placeholder="Enter your email" 
+                              type="text" 
+                              placeholder="Enter your email or username" 
                               {...field}
                               data-testid="login-email-input"
                             />

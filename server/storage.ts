@@ -188,7 +188,7 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    return Array.from(this.users.values()).find(user => user.username.toLowerCase() === username.toLowerCase());
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -200,6 +200,7 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       email: insertUser.email.toLowerCase().trim(),
+      username: insertUser.username.toLowerCase().trim(),
       id, 
       createdAt: new Date() 
     };

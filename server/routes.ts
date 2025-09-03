@@ -98,10 +98,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertUserSchema.parse(req.body);
       
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(validatedData.email);
-      if (existingUser) {
+      // Check if user already exists by email or username
+      const existingUserByEmail = await storage.getUserByEmail(validatedData.email);
+      if (existingUserByEmail) {
         return res.status(409).json({ message: "User with this email already exists" });
+      }
+      
+      const existingUserByUsername = await storage.getUserByUsername(validatedData.username);
+      if (existingUserByUsername) {
+        return res.status(409).json({ message: "User with this username already exists" });
       }
 
       const user = await storage.createUser(validatedData);
@@ -121,26 +126,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, password } = req.body;
       
       if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+        return res.status(400).json({ message: "Email/Username and password are required" });
       }
 
-      // Trim whitespace from email and password
-      const trimmedEmail = email.trim().toLowerCase();
+      // Trim whitespace from email/username and password
+      const trimmedIdentifier = email.trim().toLowerCase();
       const trimmedPassword = password.trim();
 
-      const user = await storage.getUserByEmail(trimmedEmail);
+      // Try to find user by email first, then by username
+      let user = await storage.getUserByEmail(trimmedIdentifier);
       if (!user) {
-        console.log(`Login failed: User not found for email: ${trimmedEmail}`);
+        user = await storage.getUserByUsername(trimmedIdentifier);
+      }
+
+      if (!user) {
+        console.log(`Login failed: User not found for identifier: ${trimmedIdentifier}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
       if (user.password !== trimmedPassword) {
-        console.log(`Login failed: Password mismatch for email: ${trimmedEmail}`);
+        console.log(`Login failed: Password mismatch for user: ${user.email}`);
         console.log(`Expected: "${user.password}", Received: "${trimmedPassword}"`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      console.log(`Login successful for: ${trimmedEmail}`);
+      console.log(`Login successful for: ${user.email} (username: ${user.username})`);
       // Don't return password
       const { password: _, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
