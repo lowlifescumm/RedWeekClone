@@ -17,6 +17,7 @@ export interface IStorage {
   getTopResorts(): Promise<Resort[]>;
   searchResorts(query: string): Promise<Resort[]>;
   createResort(resort: InsertResort): Promise<Resort>;
+  createResortsInBulk(insertResorts: InsertResort[]): Promise<Resort[]>;
 
   // Review methods
   getReviewsByResort(resortId: string): Promise<Review[]>;
@@ -309,13 +310,22 @@ export class MemStorage implements IStorage {
     const resort: Resort = { 
       ...insertResort, 
       id, 
-      reviewCount: insertResort.reviewCount || 0, 
+      reviewCount: 0, 
       availableRentals: insertResort.availableRentals || 0,
       isNewAvailability: insertResort.isNewAvailability || false,
       createdAt: new Date() 
     };
     this.resorts.set(id, resort);
     return resort;
+  }
+
+  async createResortsInBulk(insertResorts: InsertResort[]): Promise<Resort[]> {
+    const createdResorts: Resort[] = [];
+    for (const insertResort of insertResorts) {
+      const resort = await this.createResort(insertResort);
+      createdResorts.push(resort);
+    }
+    return createdResorts;
   }
 
   async updateResort(id: string, updateData: Partial<Omit<Resort, 'id'>>): Promise<Resort | undefined> {

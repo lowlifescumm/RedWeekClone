@@ -181,14 +181,24 @@ export default function Admin() {
                   <span className="font-medium">{totalResorts}</span>
                 </div>
               </div>
-              <Button 
-                variant="outline" 
-                className="w-full" 
-                data-testid="manage-resorts-button"
-                onClick={() => setLocation("/admin/resorts")}
-              >
-                Manage Resorts
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full text-xs" 
+                  data-testid="manage-resorts-button"
+                  onClick={() => setLocation("/admin/resorts")}
+                >
+                  Manage
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full text-xs" 
+                  data-testid="sync-inventory-button"
+                  onClick={() => setLocation("/admin/inventory")}
+                >
+                  Sync
+                </Button>
+              </div>
             </CardContent>
           </Card>
 

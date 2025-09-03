@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertReviewSchema, insertBookingSchema, insertListingSchema, insertResortSchema } from "@shared/schema";
+import { inventoryService } from "./inventory-service";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -12,6 +13,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(resorts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch resorts" });
+    }
+  });
+
+  // Inventory sync routes
+  app.get("/api/inventory/providers", async (req, res) => {
+    try {
+      const providers = inventoryService.getProviders();
+      res.json({ providers });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch providers" });
+    }
+  });
+
+  app.post("/api/inventory/sync/:provider", async (req, res) => {
+    try {
+      const { provider } = req.params;
+      const { filters } = req.body;
+      
+      const result = await inventoryService.syncInventory(
+        provider,
+        filters,
+        async (resorts) => await storage.createResortsInBulk(resorts)
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Inventory sync error:", error);
+      res.status(500).json({ 
+        message: "Inventory sync failed",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/inventory/history", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const history = inventoryService.getSyncHistory(limit);
+      res.json({ history });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch sync history" });
+    }
+  });
+
+  app.post("/api/inventory/preview/:provider", async (req, res) => {
+    try {
+      const { provider } = req.params;
+      const { filters } = req.body;
+      
+      const result = await inventoryService.syncInventory(provider, filters);
+      
+      res.json({
+        ...result,
+        preview: true,
+        message: "Preview only - no data was saved"
+      });
+    } catch (error) {
+      console.error("Inventory preview error:", error);
+      res.status(500).json({ 
+        message: "Inventory preview failed",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 

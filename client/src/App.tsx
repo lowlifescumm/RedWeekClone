@@ -12,6 +12,7 @@ import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import AdminUsers from "@/pages/admin-users";
 import AdminResorts from "@/pages/admin-resorts";
+import AdminInventory from "@/pages/admin-inventory";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/resorts" component={AdminResorts} />
+      <Route path="/admin/inventory" component={AdminInventory} />
       <Route component={NotFound} />
     </Switch>
   );
