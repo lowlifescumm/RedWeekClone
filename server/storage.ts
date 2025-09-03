@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 export interface IStorage {
   // User methods
   getUser(id: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
@@ -44,6 +45,7 @@ export class MemStorage implements IStorage {
     this.bookings = new Map();
     this.listings = new Map();
     this.seedData();
+    this.migrateUserData();
   }
 
   private seedData() {
@@ -183,8 +185,26 @@ export class MemStorage implements IStorage {
     seedReviews.forEach(review => this.reviews.set(review.id, review));
   }
 
+  private migrateUserData() {
+    // Normalize existing user data to ensure case-insensitive lookups work
+    const users = Array.from(this.users.values());
+    users.forEach(user => {
+      const normalizedUser = {
+        ...user,
+        email: user.email.toLowerCase().trim(),
+        username: user.username.toLowerCase().trim()
+      };
+      this.users.set(user.id, normalizedUser);
+    });
+    console.log(`Migrated ${users.length} users to normalized format`);
+  }
+
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
+  }
+
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
