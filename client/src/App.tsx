@@ -9,6 +9,7 @@ import ResortDetail from "@/pages/resort-detail";
 import SearchResults from "@/pages/search-results";
 import Auth from "@/pages/auth";
 import Dashboard from "@/pages/dashboard";
+import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/search" component={SearchResults} />
       <Route path="/auth" component={Auth} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );

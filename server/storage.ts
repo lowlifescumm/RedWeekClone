@@ -207,10 +207,25 @@ export class MemStorage implements IStorage {
         password: 'password123',
         firstName: 'Test',
         lastName: 'User',
+        role: 'user',
         createdAt: new Date()
       };
       this.users.set(testUser.id, testUser);
       console.log('Created test user: testuser / test@example.com');
+
+      // Create admin user
+      const adminUser = {
+        id: 'admin-user-1',
+        username: 'admin',
+        email: 'admin@tailoredtimeshare.com',
+        password: 'admin123',
+        firstName: 'Site',
+        lastName: 'Administrator',
+        role: 'admin',
+        createdAt: new Date()
+      };
+      this.users.set(adminUser.id, adminUser);
+      console.log('Created admin user: admin / admin@tailoredtimeshare.com');
     }
   }
 
@@ -236,6 +251,7 @@ export class MemStorage implements IStorage {
       ...insertUser, 
       email: insertUser.email.toLowerCase().trim(),
       username: insertUser.username.toLowerCase().trim(),
+      role: insertUser.role || 'user',
       id, 
       createdAt: new Date() 
     };

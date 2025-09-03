@@ -114,6 +114,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      // In a real app, check if user is admin via session/JWT
+      const users = await storage.getUsers();
+      // Remove passwords from response
+      const safeUsers = users.map(({ password, ...user }) => user);
+      res.json(safeUsers);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get users" });
+    }
+  });
+
   // User routes
   app.post("/api/users/register", async (req, res) => {
     try {

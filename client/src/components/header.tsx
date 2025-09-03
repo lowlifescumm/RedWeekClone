@@ -65,6 +65,13 @@ export default function Header() {
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
+                  {user.role === 'admin' && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin" data-testid="menu-admin">
+                        Admin Panel
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem data-testid="menu-logout" onClick={logout}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Sign Out
