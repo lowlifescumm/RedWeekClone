@@ -197,6 +197,21 @@ export class MemStorage implements IStorage {
       this.users.set(user.id, normalizedUser);
     });
     console.log(`Migrated ${users.length} users to normalized format`);
+
+    // Create test user for development
+    if (process.env.NODE_ENV === 'development') {
+      const testUser = {
+        id: 'test-user-1',
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'password123',
+        firstName: 'Test',
+        lastName: 'User',
+        createdAt: new Date()
+      };
+      this.users.set(testUser.id, testUser);
+      console.log('Created test user: testuser / test@example.com');
+    }
   }
 
   async getUser(id: string): Promise<User | undefined> {
