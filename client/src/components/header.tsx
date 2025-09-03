@@ -18,19 +18,19 @@ export default function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
             <Link href="/search" data-testid="nav-browse">
-              <a className="text-foreground hover:text-primary transition-colors">Browse</a>
+              <span className="text-foreground hover:text-primary transition-colors cursor-pointer">Browse</span>
             </Link>
             <Link href="/search?type=rent" data-testid="nav-rent">
-              <a className="text-foreground hover:text-primary transition-colors">Rent</a>
+              <span className="text-foreground hover:text-primary transition-colors cursor-pointer">Rent</span>
             </Link>
             <Link href="/search?type=buy" data-testid="nav-buy">
-              <a className="text-foreground hover:text-primary transition-colors">Buy</a>
+              <span className="text-foreground hover:text-primary transition-colors cursor-pointer">Buy</span>
             </Link>
             <Link href="/search?type=sell" data-testid="nav-sell">
-              <a className="text-foreground hover:text-primary transition-colors">Sell</a>
+              <span className="text-foreground hover:text-primary transition-colors cursor-pointer">Sell</span>
             </Link>
             <Link href="/forums" data-testid="nav-forums">
-              <a className="text-foreground hover:text-primary transition-colors">Forums</a>
+              <span className="text-foreground hover:text-primary transition-colors cursor-pointer">Forums</span>
             </Link>
           </nav>
           
@@ -58,19 +58,19 @@ export default function Header() {
             <SheetContent side="right" className="w-[300px]">
               <div className="flex flex-col space-y-4 mt-6">
                 <Link href="/search" data-testid="mobile-nav-browse">
-                  <a className="text-foreground hover:text-primary transition-colors block py-2">Browse</a>
+                  <span className="text-foreground hover:text-primary transition-colors block py-2 cursor-pointer">Browse</span>
                 </Link>
                 <Link href="/search?type=rent" data-testid="mobile-nav-rent">
-                  <a className="text-foreground hover:text-primary transition-colors block py-2">Rent</a>
+                  <span className="text-foreground hover:text-primary transition-colors block py-2 cursor-pointer">Rent</span>
                 </Link>
                 <Link href="/search?type=buy" data-testid="mobile-nav-buy">
-                  <a className="text-foreground hover:text-primary transition-colors block py-2">Buy</a>
+                  <span className="text-foreground hover:text-primary transition-colors block py-2 cursor-pointer">Buy</span>
                 </Link>
                 <Link href="/search?type=sell" data-testid="mobile-nav-sell">
-                  <a className="text-foreground hover:text-primary transition-colors block py-2">Sell</a>
+                  <span className="text-foreground hover:text-primary transition-colors block py-2 cursor-pointer">Sell</span>
                 </Link>
                 <Link href="/forums" data-testid="mobile-nav-forums">
-                  <a className="text-foreground hover:text-primary transition-colors block py-2">Forums</a>
+                  <span className="text-foreground hover:text-primary transition-colors block py-2 cursor-pointer">Forums</span>
                 </Link>
                 <div className="pt-4 border-t">
                   <Link href="/auth?mode=signin" data-testid="mobile-button-signin">

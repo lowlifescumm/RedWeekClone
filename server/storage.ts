@@ -237,7 +237,14 @@ export class MemStorage implements IStorage {
 
   async createResort(insertResort: InsertResort): Promise<Resort> {
     const id = randomUUID();
-    const resort: Resort = { ...insertResort, id, reviewCount: 0, createdAt: new Date() };
+    const resort: Resort = { 
+      ...insertResort, 
+      id, 
+      reviewCount: 0, 
+      availableRentals: insertResort.availableRentals || 0,
+      isNewAvailability: insertResort.isNewAvailability || false,
+      createdAt: new Date() 
+    };
     this.resorts.set(id, resort);
     return resort;
   }
