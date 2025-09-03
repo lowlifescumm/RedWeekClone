@@ -259,6 +259,27 @@ export class MemStorage implements IStorage {
     return user;
   }
 
+  async updateUser(id: string, updateData: Partial<Omit<User, 'id' | 'createdAt' | 'password'>>): Promise<User | undefined> {
+    const existingUser = this.users.get(id);
+    if (!existingUser) {
+      return undefined;
+    }
+
+    const updatedUser: User = {
+      ...existingUser,
+      ...updateData,
+      email: updateData.email ? updateData.email.toLowerCase().trim() : existingUser.email,
+      username: updateData.username ? updateData.username.toLowerCase().trim() : existingUser.username,
+    };
+
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    return this.users.delete(id);
+  }
+
   async getResorts(): Promise<Resort[]> {
     return Array.from(this.resorts.values());
   }
@@ -283,6 +304,39 @@ export class MemStorage implements IStorage {
       .slice(0, 12);
   }
 
+  async createResort(insertResort: InsertResort): Promise<Resort> {
+    const id = randomUUID();
+    const resort: Resort = { 
+      ...insertResort, 
+      id, 
+      reviewCount: insertResort.reviewCount || 0, 
+      availableRentals: insertResort.availableRentals || 0,
+      isNewAvailability: insertResort.isNewAvailability || false,
+      createdAt: new Date() 
+    };
+    this.resorts.set(id, resort);
+    return resort;
+  }
+
+  async updateResort(id: string, updateData: Partial<Omit<Resort, 'id'>>): Promise<Resort | undefined> {
+    const existingResort = this.resorts.get(id);
+    if (!existingResort) {
+      return undefined;
+    }
+
+    const updatedResort: Resort = {
+      ...existingResort,
+      ...updateData,
+    };
+
+    this.resorts.set(id, updatedResort);
+    return updatedResort;
+  }
+
+  async deleteResort(id: string): Promise<boolean> {
+    return this.resorts.delete(id);
+  }
+
   async searchResorts(query: string): Promise<Resort[]> {
     const lowercaseQuery = query.toLowerCase();
     return Array.from(this.resorts.values()).filter(resort =>
@@ -290,20 +344,6 @@ export class MemStorage implements IStorage {
       resort.location.toLowerCase().includes(lowercaseQuery) ||
       resort.destination.toLowerCase().includes(lowercaseQuery)
     );
-  }
-
-  async createResort(insertResort: InsertResort): Promise<Resort> {
-    const id = randomUUID();
-    const resort: Resort = { 
-      ...insertResort, 
-      id, 
-      reviewCount: 0, 
-      availableRentals: insertResort.availableRentals || 0,
-      isNewAvailability: insertResort.isNewAvailability || false,
-      createdAt: new Date() 
-    };
-    this.resorts.set(id, resort);
-    return resort;
   }
 
   async getReviewsByResort(resortId: string): Promise<Review[]> {

@@ -10,6 +10,8 @@ import SearchResults from "@/pages/search-results";
 import Auth from "@/pages/auth";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
+import AdminUsers from "@/pages/admin-users";
+import AdminResorts from "@/pages/admin-resorts";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -21,6 +23,8 @@ function Router() {
       <Route path="/auth" component={Auth} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin" component={Admin} />
+      <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin/resorts" component={AdminResorts} />
       <Route component={NotFound} />
     </Switch>
   );

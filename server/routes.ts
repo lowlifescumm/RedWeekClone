@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertReviewSchema, insertBookingSchema, insertListingSchema } from "@shared/schema";
+import { insertUserSchema, insertReviewSchema, insertBookingSchema, insertListingSchema, insertResortSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -124,6 +124,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(safeUsers);
     } catch (error) {
       res.status(500).json({ message: "Failed to get users" });
+    }
+  });
+
+  // Update user (admin only)
+  app.patch("/api/admin/users/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      // Validate the update data
+      const validatedData = insertUserSchema.omit({ password: true }).parse(updateData);
+      
+      const updatedUser = await storage.updateUser(id, validatedData);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Remove password from response
+      const { password, ...safeUser } = updatedUser;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Update user error:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Delete user (admin only)
+  app.delete("/api/admin/users/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const success = await storage.deleteUser(id);
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Delete user error:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Resort admin routes
+  app.post("/api/admin/resorts", async (req, res) => {
+    try {
+      const resortData = insertResortSchema.parse(req.body);
+      const newResort = await storage.createResort(resortData);
+      res.json(newResort);
+    } catch (error) {
+      console.error("Create resort error:", error);
+      res.status(500).json({ message: "Failed to create resort" });
+    }
+  });
+
+  app.patch("/api/admin/resorts/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      const validatedData = insertResortSchema.parse(updateData);
+      const updatedResort = await storage.updateResort(id, validatedData);
+      
+      if (!updatedResort) {
+        return res.status(404).json({ message: "Resort not found" });
+      }
+      
+      res.json(updatedResort);
+    } catch (error) {
+      console.error("Update resort error:", error);
+      res.status(500).json({ message: "Failed to update resort" });
+    }
+  });
+
+  app.delete("/api/admin/resorts/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const success = await storage.deleteResort(id);
+      if (!success) {
+        return res.status(404).json({ message: "Resort not found" });
+      }
+      
+      res.json({ message: "Resort deleted successfully" });
+    } catch (error) {
+      console.error("Delete resort error:", error);
+      res.status(500).json({ message: "Failed to delete resort" });
     }
   });
 

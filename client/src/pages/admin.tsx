@@ -148,7 +148,12 @@ export default function Admin() {
                   <span className="font-medium">{Array.isArray(users) ? users.filter((u: any) => u.role === 'admin').length : 0}</span>
                 </div>
               </div>
-              <Button variant="outline" className="w-full" data-testid="manage-users-button">
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                data-testid="manage-users-button"
+                onClick={() => setLocation("/admin/users")}
+              >
                 View All Users
               </Button>
             </CardContent>
@@ -176,7 +181,12 @@ export default function Admin() {
                   <span className="font-medium">{totalResorts}</span>
                 </div>
               </div>
-              <Button variant="outline" className="w-full" data-testid="manage-resorts-button">
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                data-testid="manage-resorts-button"
+                onClick={() => setLocation("/admin/resorts")}
+              >
                 Manage Resorts
               </Button>
             </CardContent>
