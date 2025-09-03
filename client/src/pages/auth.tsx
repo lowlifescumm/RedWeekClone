@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
 import { insertUserSchema } from "@shared/schema";
 
 const loginSchema = z.object({
@@ -37,6 +38,7 @@ export default function Auth() {
   const [activeTab, setActiveTab] = useState(mode);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { login } = useAuth();
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -58,26 +60,7 @@ export default function Auth() {
     },
   });
 
-  const loginMutation = useMutation({
-    mutationFn: async (data: LoginFormData) => {
-      const response = await apiRequest("POST", "/api/users/login", data);
-      return response.json();
-    },
-    onSuccess: (user) => {
-      toast({
-        title: "Welcome back!",
-        description: `Logged in as ${user.firstName} ${user.lastName}`,
-      });
-      setLocation("/dashboard");
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Login failed",
-        description: error.message || "Invalid credentials",
-        variant: "destructive",
-      });
-    },
-  });
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterFormData) => {
@@ -101,8 +84,24 @@ export default function Auth() {
     },
   });
 
-  const onLoginSubmit = (data: LoginFormData) => {
-    loginMutation.mutate(data);
+  const onLoginSubmit = async (data: LoginFormData) => {
+    try {
+      setIsLoggingIn(true);
+      await login(data);
+      toast({
+        title: "Welcome back!",
+        description: "Successfully logged in",
+      });
+      setLocation("/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid credentials",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   const onRegisterSubmit = (data: RegisterFormData) => {
@@ -172,10 +171,10 @@ export default function Auth() {
                     <Button 
                       type="submit" 
                       className="w-full"
-                      disabled={loginMutation.isPending}
+                      disabled={isLoggingIn}
                       data-testid="login-submit-button"
                     >
-                      {loginMutation.isPending ? "Signing In..." : "Sign In"}
+                      {isLoggingIn ? "Signing In..." : "Sign In"}
                     </Button>
                   </form>
                 </Form>
