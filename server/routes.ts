@@ -93,36 +93,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin endpoint to create test user - temporary
-  app.post("/api/admin/create-test-user", async (req, res) => {
+  // Get current user endpoint
+  app.get("/api/users/me", async (req, res) => {
     try {
-      const testUser = {
-        username: "efitzhenry",
-        email: "ethan.fitzhenry@example.com",
-        password: "password123",
-        firstName: "Ethan",
-        lastName: "Fitzhenry"
-      };
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(testUser.email);
-      if (existingUser) {
-        return res.status(409).json({ message: "Test user already exists" });
-      }
-      
-      const user = await storage.createUser(testUser);
-      const { password, ...userWithoutPassword } = user;
-      res.status(201).json({ 
-        message: "Test user created successfully", 
-        user: userWithoutPassword,
-        credentials: {
-          username: testUser.username,
-          email: testUser.email,
-          password: testUser.password
-        }
-      });
+      // For now, we'll simulate session with a simple check
+      // In a real app, this would check session/JWT
+      res.status(401).json({ message: "Not authenticated" });
     } catch (error) {
-      res.status(500).json({ message: "Failed to create test user" });
+      res.status(500).json({ message: "Failed to get current user" });
+    }
+  });
+
+  // Logout endpoint
+  app.post("/api/users/logout", async (req, res) => {
+    try {
+      // In a real app, this would clear session/invalidate JWT
+      res.json({ message: "Logged out successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to logout" });
     }
   });
 

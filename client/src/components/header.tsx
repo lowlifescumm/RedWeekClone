@@ -1,9 +1,20 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, User, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "@/lib/auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Header() {
+  const { user, logout } = useAuth();
+
   return (
     <header className="bg-white shadow-sm border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -34,18 +45,46 @@ export default function Header() {
             </Link>
           </nav>
           
-          {/* Auth Buttons */}
+          {/* Auth Buttons or User Menu */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link href="/auth?mode=signin" data-testid="button-signin">
-              <Button variant="ghost" className="text-foreground hover:text-primary">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/auth?mode=register" data-testid="button-register">
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                Register Free
-              </Button>
-            </Link>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2" data-testid="user-menu">
+                    <User className="h-4 w-4" />
+                    {user.firstName}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel data-testid="user-menu-label">
+                    {user.firstName} {user.lastName}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard" data-testid="menu-dashboard">
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem data-testid="menu-logout" onClick={logout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Link href="/auth?mode=signin" data-testid="button-signin">
+                  <Button variant="ghost" className="text-foreground hover:text-primary">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/auth?mode=register" data-testid="button-register">
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    Register Free
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
           
           {/* Mobile menu */}

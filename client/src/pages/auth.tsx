@@ -68,7 +68,7 @@ export default function Auth() {
         title: "Welcome back!",
         description: `Logged in as ${user.firstName} ${user.lastName}`,
       });
-      setLocation("/");
+      setLocation("/dashboard");
     },
     onError: (error: any) => {
       toast({
@@ -90,7 +90,7 @@ export default function Auth() {
         title: "Account created!",
         description: `Welcome to Tailored Timeshare Solutions, ${user.firstName}!`,
       });
-      setLocation("/");
+      setLocation("/dashboard");
     },
     onError: (error: any) => {
       toast({
