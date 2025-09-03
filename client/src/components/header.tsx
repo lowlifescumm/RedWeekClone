@@ -10,8 +10,8 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" data-testid="logo-link">
-            <div className="bg-primary text-primary-foreground px-3 py-2 rounded-md font-bold text-xl">
-              RedWeek
+            <div className="bg-primary text-primary-foreground px-3 py-2 rounded-md font-bold text-lg">
+              Tailored Timeshare Solutions
             </div>
           </Link>
           

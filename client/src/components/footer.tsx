@@ -8,8 +8,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <div className="bg-primary text-primary-foreground px-3 py-2 rounded-md font-bold text-xl">
-                RedWeek
+              <div className="bg-primary text-primary-foreground px-3 py-2 rounded-md font-bold text-lg">
+                Tailored Timeshare Solutions
               </div>
             </div>
             <p className="text-gray-400 mb-4">
@@ -90,7 +90,7 @@ export default function Footer() {
         </div>
         
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; 2024 RedWeek. All rights reserved. | Privacy Policy | Terms of Service</p>
+          <p>&copy; 2024 TailoredTimeshareSolutions.com. All rights reserved. | Privacy Policy | Terms of Service</p>
         </div>
       </div>
     </footer>

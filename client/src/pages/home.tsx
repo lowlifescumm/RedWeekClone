@@ -32,13 +32,13 @@ export default function Home() {
   const sampleReviews = [
     {
       rating: 5,
-      content: "LOVE RedWeek. We have rented units and also placed our units on RedWeek for rent. Each time every sale went through smoothly. RedWeek has helped improve our vacation experiences tremendously.",
+      content: "LOVE Tailored Timeshare Solutions. We have rented units and also placed our units for rent. Each time every sale went through smoothly. Tailored Timeshare Solutions has helped improve our vacation experiences tremendously.",
       author: "Esther W. & family",
       memberSince: "2012"
     },
     {
       rating: 5,
-      content: "Efficient and effective customer service. Highly recommend. RedWeek handled every aspect of the rental, they made me very comfortable.",
+      content: "Efficient and effective customer service. Highly recommend. Tailored Timeshare Solutions handled every aspect of the rental, they made me very comfortable.",
       author: "JNP",
       timeAgo: "3 days ago"
     },
@@ -208,7 +208,7 @@ export default function Home() {
             Join the most trusted Timeshare community
           </h2>
           <p className="text-xl mb-8 text-red-100" data-testid="cta-subtitle">
-            Over 2.1 million subscribers trust RedWeek for their vacation rental needs
+            Over 2.1 million subscribers trust Tailored Timeshare Solutions for their vacation rental needs
           </p>
           <Link href="/auth?mode=register" data-testid="cta-register-button">
             <Button className="bg-white text-primary px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg">

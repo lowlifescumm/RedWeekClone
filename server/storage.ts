@@ -157,7 +157,7 @@ export class MemStorage implements IStorage {
         userId: "user1",
         rating: 5,
         title: "Amazing vacation experience",
-        content: "LOVE RedWeek. We have rented units and also placed our units on RedWeek for rent. Each time every sale went through smoothly. RedWeek has helped improve our vacation experiences tremendously.",
+        content: "LOVE Tailored Timeshare Solutions. We have rented units and also placed our units for rent. Each time every sale went through smoothly. Tailored Timeshare Solutions has helped improve our vacation experiences tremendously.",
         createdAt: new Date()
       },
       {
@@ -166,7 +166,7 @@ export class MemStorage implements IStorage {
         userId: "user2",
         rating: 5,
         title: "Excellent service",
-        content: "Efficient and effective customer service. Highly recommend. RedWeek handled every aspect of the rental, they made me very comfortable.",
+        content: "Efficient and effective customer service. Highly recommend. Tailored Timeshare Solutions handled every aspect of the rental, they made me very comfortable.",
         createdAt: new Date()
       },
       {
@@ -175,7 +175,7 @@ export class MemStorage implements IStorage {
         userId: "user3",
         rating: 5,
         title: "Very easy to set up",
-        content: "Very easy to set up! Everyone was very helpful and answered my questions in a timely manner. Great communication from Redweek!",
+        content: "Very easy to set up! Everyone was very helpful and answered my questions in a timely manner. Great communication from Tailored Timeshare Solutions!",
         createdAt: new Date()
       }
     ];

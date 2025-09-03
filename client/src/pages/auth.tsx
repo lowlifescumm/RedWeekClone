@@ -88,7 +88,7 @@ export default function Auth() {
     onSuccess: (user) => {
       toast({
         title: "Account created!",
-        description: `Welcome to RedWeek, ${user.firstName}!`,
+        description: `Welcome to Tailored Timeshare Solutions, ${user.firstName}!`,
       });
       setLocation("/");
     },
@@ -117,7 +117,7 @@ export default function Auth() {
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold" data-testid="auth-title">
-              Join RedWeek
+              Join Tailored Timeshare Solutions
             </CardTitle>
             <CardDescription>
               The world's largest timeshare marketplace

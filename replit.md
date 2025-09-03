@@ -1,6 +1,6 @@
 # Overview
 
-This is a full-stack timeshare marketplace web application called "RedWeek" built with React, Express, and PostgreSQL. The application allows users to browse resorts, search for timeshare rentals, view detailed resort information, and manage bookings. It features a modern UI built with shadcn/ui components and Tailwind CSS, providing a comprehensive platform for timeshare owners and travelers to connect.
+This is a full-stack timeshare marketplace web application called "TailoredTimeshareSolutions.com" built with React, Express, and PostgreSQL. The application allows users to browse resorts, search for timeshare rentals, view detailed resort information, and manage bookings. It features a modern UI built with shadcn/ui components and Tailwind CSS, providing a comprehensive platform for timeshare owners and travelers to connect.
 
 # User Preferences
 

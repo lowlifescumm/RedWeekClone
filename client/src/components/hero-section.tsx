@@ -30,28 +30,28 @@ export default function HeroSection() {
           <div className="flex flex-wrap gap-2 mt-4 text-sm justify-center">
             <span className="text-muted-foreground">or browse:</span>
             <Link href="/search?q=Disney" data-testid="quick-link-disney">
-              <a className="text-red-300 hover:underline">Disney,</a>
+              <span className="text-red-300 hover:underline cursor-pointer">Disney,</span>
             </Link>
             <Link href="/search?q=Thanksgiving" data-testid="quick-link-thanksgiving">
-              <a className="text-red-300 hover:underline">Thanksgiving,</a>
+              <span className="text-red-300 hover:underline cursor-pointer">Thanksgiving,</span>
             </Link>
             <Link href="/search?q=Las Vegas" data-testid="quick-link-vegas">
-              <a className="text-red-300 hover:underline">Las Vegas,</a>
+              <span className="text-red-300 hover:underline cursor-pointer">Las Vegas,</span>
             </Link>
             <Link href="/search?q=Aruba" data-testid="quick-link-aruba">
-              <a className="text-red-300 hover:underline">Aruba,</a>
+              <span className="text-red-300 hover:underline cursor-pointer">Aruba,</span>
             </Link>
             <Link href="/search?q=Hawaii" data-testid="quick-link-hawaii">
-              <a className="text-red-300 hover:underline">Hawaii,</a>
+              <span className="text-red-300 hover:underline cursor-pointer">Hawaii,</span>
             </Link>
             <Link href="/search?q=Mexico" data-testid="quick-link-mexico">
-              <a className="text-red-300 hover:underline">Mexico,</a>
+              <span className="text-red-300 hover:underline cursor-pointer">Mexico,</span>
             </Link>
             <Link href="/search?q=California" data-testid="quick-link-california">
-              <a className="text-red-300 hover:underline">California,</a>
+              <span className="text-red-300 hover:underline cursor-pointer">California,</span>
             </Link>
             <Link href="/search" data-testid="quick-link-more">
-              <a className="text-red-300 hover:underline">and more</a>
+              <span className="text-red-300 hover:underline cursor-pointer">and more</span>
             </Link>
           </div>
         </div>
