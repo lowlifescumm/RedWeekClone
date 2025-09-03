@@ -124,15 +124,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email and password are required" });
       }
 
-      const user = await storage.getUserByEmail(email);
-      if (!user || user.password !== password) {
+      // Trim whitespace from email and password
+      const trimmedEmail = email.trim().toLowerCase();
+      const trimmedPassword = password.trim();
+
+      const user = await storage.getUserByEmail(trimmedEmail);
+      if (!user) {
+        console.log(`Login failed: User not found for email: ${trimmedEmail}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      if (user.password !== trimmedPassword) {
+        console.log(`Login failed: Password mismatch for email: ${trimmedEmail}`);
+        console.log(`Expected: "${user.password}", Received: "${trimmedPassword}"`);
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      console.log(`Login successful for: ${trimmedEmail}`);
       // Don't return password
       const { password: _, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
     } catch (error) {
+      console.error("Login error:", error);
       res.status(500).json({ message: "Failed to login" });
     }
   });
