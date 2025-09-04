@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { Facebook, Twitter, Instagram } from "lucide-react";
+import logoUrl from "@/assets/logo.jpg";
 
 export default function Footer() {
   return (
@@ -7,10 +8,13 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="bg-primary text-primary-foreground px-3 py-2 rounded-md font-bold text-lg">
-                Tailored Timeshare Solutions
-              </div>
+            <div className="flex items-center mb-4">
+              <img 
+                src={logoUrl} 
+                alt="Tailored Timeshare Solutions" 
+                className="h-16 w-auto object-contain"
+                data-testid="footer-logo"
+              />
             </div>
             <p className="text-gray-400 mb-4">
               The world's largest timeshare marketplace connecting owners and travelers worldwide.

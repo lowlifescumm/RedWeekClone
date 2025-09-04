@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Menu, User, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import logoUrl from "@/assets/logo.jpg";
 import { useAuth } from "@/lib/auth";
 import {
   DropdownMenu,
@@ -21,8 +22,13 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" data-testid="logo-link">
-            <div className="bg-primary text-primary-foreground px-3 py-2 rounded-md font-bold text-lg">
-              Tailored Timeshare Solutions
+            <div className="flex items-center">
+              <img 
+                src={logoUrl} 
+                alt="Tailored Timeshare Solutions" 
+                className="h-12 w-auto object-contain filter brightness-0 invert"
+                data-testid="company-logo"
+              />
             </div>
           </Link>
           
