@@ -29,7 +29,9 @@ export interface IStorage {
 
   // Listing methods
   getListingsByOwner(ownerId: string): Promise<Listing[]>;
+  getListing(id: string): Promise<Listing | undefined>;
   createListing(listing: InsertListing): Promise<Listing>;
+  updateListing(id: string, updateData: Partial<Omit<Listing, 'id' | 'createdAt'>>): Promise<Listing | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -382,11 +384,38 @@ export class MemStorage implements IStorage {
     return Array.from(this.listings.values()).filter(listing => listing.ownerId === ownerId);
   }
 
+  async getListing(id: string): Promise<Listing | undefined> {
+    return this.listings.get(id);
+  }
+
   async createListing(insertListing: InsertListing): Promise<Listing> {
     const id = randomUUID();
-    const listing: Listing = { ...insertListing, id, isActive: true, createdAt: new Date() };
+    const listing: Listing = { 
+      ...insertListing, 
+      id, 
+      isActive: true, 
+      contractVerificationStatus: "pending",
+      escrowStatus: "none",
+      ownershipVerified: false,
+      createdAt: new Date() 
+    };
     this.listings.set(id, listing);
     return listing;
+  }
+
+  async updateListing(id: string, updateData: Partial<Omit<Listing, 'id' | 'createdAt'>>): Promise<Listing | undefined> {
+    const existingListing = this.listings.get(id);
+    if (!existingListing) {
+      return undefined;
+    }
+
+    const updatedListing: Listing = {
+      ...existingListing,
+      ...updateData,
+    };
+
+    this.listings.set(id, updatedListing);
+    return updatedListing;
   }
 }
 

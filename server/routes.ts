@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertReviewSchema, insertBookingSchema, insertListingSchema, insertResortSchema } from "@shared/schema";
 import { inventoryService } from "./inventory-service";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -389,6 +390,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(listings);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch listings" });
+    }
+  });
+
+  // Contract upload routes
+  app.post("/api/contracts/upload", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error generating upload URL:", error);
+      res.status(500).json({ message: "Failed to generate upload URL" });
+    }
+  });
+
+  app.get("/contracts/:contractPath(*)", async (req, res) => {
+    try {
+      const contractPath = req.params.contractPath;
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(`/contracts/${contractPath}`);
+      await objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error downloading contract:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.status(404).json({ message: "Contract not found" });
+      }
+      res.status(500).json({ message: "Failed to download contract" });
+    }
+  });
+
+  app.post("/api/listings/:id/contract", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { contractDocumentUrl } = req.body;
+      
+      if (!contractDocumentUrl) {
+        return res.status(400).json({ message: "Contract document URL is required" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const normalizedPath = objectStorageService.normalizeObjectEntityPath(contractDocumentUrl);
+      
+      // Update listing with contract information
+      const updatedListing = await storage.updateListing(id, {
+        contractDocumentUrl: normalizedPath,
+        contractVerificationStatus: "under_review"
+      });
+      
+      res.json({ 
+        contractPath: normalizedPath,
+        message: "Contract uploaded successfully" 
+      });
+    } catch (error) {
+      console.error("Error processing contract upload:", error);
+      res.status(500).json({ message: "Failed to process contract upload" });
+    }
+  });
+
+  // Escrow integration routes
+  app.post("/api/listings/:id/escrow", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { action, salePrice } = req.body;
+      
+      if (action === "initiate") {
+        // TODO: Integrate with concordtitle.net API
+        const escrowAccountId = `escrow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Mock escrow initiation for now
+        const escrowData = {
+          escrowAccountId,
+          status: "initiated",
+          salePrice,
+          escrowService: "concordtitle.net",
+          instructions: "Please complete ownership verification before proceeding with escrow."
+        };
+        
+        res.json(escrowData);
+      } else {
+        res.status(400).json({ message: "Invalid escrow action" });
+      }
+    } catch (error) {
+      console.error("Error managing escrow:", error);
+      res.status(500).json({ message: "Failed to manage escrow" });
     }
   });
 

@@ -64,6 +64,13 @@ export const listings = pgTable("listings", {
   availableTo: timestamp("available_to").notNull(),
   maxGuests: integer("max_guests").notNull(),
   isActive: boolean("is_active").notNull().default(true),
+  contractDocumentUrl: text("contract_document_url"),
+  contractVerificationStatus: text("contract_verification_status").notNull().default("pending"),
+  escrowStatus: text("escrow_status").notNull().default("none"),
+  ownershipVerified: boolean("ownership_verified").notNull().default(false),
+  escrowAccountId: text("escrow_account_id"),
+  salePrice: integer("sale_price"),
+  isForSale: boolean("is_for_sale").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow()
 });
 
@@ -92,7 +99,10 @@ export const insertBookingSchema = createInsertSchema(bookings).omit({
 export const insertListingSchema = createInsertSchema(listings).omit({
   id: true,
   createdAt: true,
-  isActive: true
+  isActive: true,
+  contractVerificationStatus: true,
+  escrowStatus: true,
+  ownershipVerified: true
 });
 
 export type User = typeof users.$inferSelect;
