@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Menu, User, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import logoUrl from "@/assets/logo.jpg";
+import logoUrl from "@/assets/logo.png";
 import { useAuth } from "@/lib/auth";
 import {
   DropdownMenu,
@@ -26,7 +26,7 @@ export default function Header() {
               <img 
                 src={logoUrl} 
                 alt="Tailored Timeshare Solutions" 
-                className="h-12 w-auto object-contain filter brightness-0 invert"
+                className="h-12 w-auto object-contain"
                 data-testid="company-logo"
               />
             </div>

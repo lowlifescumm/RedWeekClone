@@ -7,9 +7,9 @@ This is a full-stack timeshare marketplace web application called "TailoredTimes
 Preferred communication style: Simple, everyday language.
 
 ## Branding
-- Logo: Custom "Tailored Timeshare Solutions" logo with TS monogram in circular design
-- Location: /client/src/assets/logo.jpg
-- Usage: Integrated in header navigation with CSS filters for proper contrast
+- Logo: Custom "Tailored Timeshare Solutions" logo with TS monogram in circular design (transparent PNG)
+- Location: /client/src/assets/logo.png
+- Usage: Integrated in header and footer navigation with transparent background for optimal display
 
 # System Architecture
 
