@@ -49,7 +49,7 @@ export default function CreateListing() {
       queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
       
       if (uploadedContractUrl && listing?.id) {
-        // Upload contract (required)
+        // Upload contract if provided
         contractUploadMutation.mutate({
           listingId: listing.id,
           contractUrl: uploadedContractUrl,
@@ -59,11 +59,10 @@ export default function CreateListing() {
           description: "Your listing and ownership contract have been submitted for verification.",
         });
       } else {
-        // This should not happen since contract is required
+        // Listing created without contract - team will follow up
         toast({
-          title: "Error",
-          description: "Contract upload is required but missing.",
-          variant: "destructive",
+          title: "Listing Created Successfully!",
+          description: "Your listing has been submitted. Our team will contact you about contract verification for listing approval.",
         });
       }
     },
@@ -391,9 +390,9 @@ export default function CreateListing() {
                     </div>
 
                     <div className="border-t pt-6">
-                      <h3 className="text-lg font-semibold mb-4">Contract Upload (Required) <span className="text-red-500">*</span></h3>
+                      <h3 className="text-lg font-semibold mb-4">Contract Upload</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        <strong>Upload your ownership contract to verify your timeshare ownership.</strong> This is mandatory to ensure you have the legal rights to list this property.
+                        Upload your ownership contract to verify your timeshare ownership. <strong>Note: Contract verification is required before your listing can be published.</strong> Our team will review your submission.
                       </p>
                       
                       <ContractUploader
@@ -402,7 +401,7 @@ export default function CreateListing() {
                         buttonClassName={contractUploaded ? "bg-green-600 hover:bg-green-700" : ""}
                       >
                         <Upload className="mr-2 h-4 w-4" />
-                        {contractUploaded ? "Ownership Contract Uploaded ✓" : "Upload Ownership Contract *"}
+                        {contractUploaded ? "Ownership Contract Uploaded ✓" : "Upload Ownership Contract"}
                       </ContractUploader>
                       
                       {contractUploaded && (
@@ -415,15 +414,14 @@ export default function CreateListing() {
                     <div className="flex justify-end">
                       <Button 
                         type="submit" 
-                        disabled={createListingMutation.isPending || !contractUploaded}
-                        className={!contractUploaded ? "opacity-50 cursor-not-allowed" : ""}
+                        disabled={createListingMutation.isPending}
                         data-testid="button-create-listing"
                       >
                         {createListingMutation.isPending ? "Creating..." : "Create Listing"}
                       </Button>
                       {!contractUploaded && (
-                        <p className="text-sm text-red-600 dark:text-red-400 mt-2 text-center">
-                          Please upload your ownership contract before submitting
+                        <p className="text-sm text-amber-600 dark:text-amber-400 mt-2 text-center">
+                          <strong>Note:</strong> Contract upload will be required for listing approval
                         </p>
                       )}
                     </div>
@@ -441,7 +439,7 @@ export default function CreateListing() {
                   Contract Verification
                 </CardTitle>
                 <CardDescription>
-                  <strong>Mandatory:</strong> Upload your ownership contract to verify your legal right to list this timeshare property.
+                  Upload your ownership contract to verify your legal right to list this timeshare property. Contract verification is required for listing approval.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -449,7 +447,7 @@ export default function CreateListing() {
                   <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
                     <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Why upload a contract?</h4>
                     <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                      <li>• <strong>Required:</strong> Verifies your legal ownership of the timeshare</li>
+                      <li>• Verifies your legal ownership of the timeshare</li>
                       <li>• Prevents unauthorized listings and protects renters</li>
                       <li>• Required for escrow services when selling</li>
                       <li>• Builds trust and increases booking rates</li>
@@ -465,10 +463,10 @@ export default function CreateListing() {
                   </ContractUploader>
 
                   <div className="flex justify-between">
-                    <div className="text-sm text-red-600 dark:text-red-400">
-                      <strong>Required:</strong> Contract upload is mandatory for all listings
+                    <div className="text-sm text-amber-600 dark:text-amber-400">
+                      <strong>Note:</strong> Contract verification required for listing approval
                     </div>
-                    <Button onClick={() => setCurrentStep("escrow")} disabled={!contractUploaded}>
+                    <Button onClick={() => setCurrentStep("escrow")}>
                       Continue
                     </Button>
                   </div>
