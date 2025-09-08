@@ -1,9 +1,18 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertReviewSchema, insertBookingSchema, insertListingSchema, insertResortSchema } from "@shared/schema";
+import { 
+  insertUserSchema, 
+  insertReviewSchema, 
+  insertBookingSchema, 
+  insertListingSchema, 
+  insertResortSchema,
+  insertSiteSettingSchema,
+  insertPropertyInquirySchema
+} from "@shared/schema";
 import { inventoryService } from "./inventory-service";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { authenticateUser, requireAdmin, requireAuth } from "./middleware";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -178,10 +187,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin routes
-  app.get("/api/admin/users", async (req, res) => {
+  // Admin routes - now protected with authentication
+  app.get("/api/admin/users", authenticateUser, requireAdmin, async (req, res) => {
     try {
-      // In a real app, check if user is admin via session/JWT
       const users = await storage.getUsers();
       // Remove passwords from response
       const safeUsers = users.map(({ password, ...user }) => user);
@@ -192,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update user (admin only)
-  app.patch("/api/admin/users/:id", async (req, res) => {
+  app.patch("/api/admin/users/:id", authenticateUser, requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const updateData = req.body;
@@ -215,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete user (admin only)
-  app.delete("/api/admin/users/:id", async (req, res) => {
+  app.delete("/api/admin/users/:id", authenticateUser, requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       
@@ -232,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Resort admin routes
-  app.post("/api/admin/resorts", async (req, res) => {
+  app.post("/api/admin/resorts", authenticateUser, requireAdmin, async (req, res) => {
     try {
       const resortData = insertResortSchema.parse(req.body);
       const newResort = await storage.createResort(resortData);
@@ -243,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/resorts/:id", async (req, res) => {
+  app.patch("/api/admin/resorts/:id", authenticateUser, requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const updateData = req.body;
@@ -262,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/resorts/:id", async (req, res) => {
+  app.delete("/api/admin/resorts/:id", authenticateUser, requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       
@@ -445,6 +453,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error processing contract upload:", error);
       res.status(500).json({ message: "Failed to process contract upload" });
+    }
+  });
+
+  // Site Settings Admin Routes
+  app.get("/api/admin/settings", authenticateUser, requireAdmin, async (req, res) => {
+    try {
+      const { category } = req.query;
+      let settings;
+      
+      if (category && typeof category === 'string') {
+        settings = await storage.getSiteSettingsByCategory(category);
+      } else {
+        settings = await storage.getAllSiteSettings();
+      }
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Failed to fetch site settings:", error);
+      res.status(500).json({ message: "Failed to fetch site settings" });
+    }
+  });
+
+  app.get("/api/admin/settings/:key", authenticateUser, requireAdmin, async (req, res) => {
+    try {
+      const { key } = req.params;
+      const setting = await storage.getSiteSetting(key);
+      
+      if (!setting) {
+        return res.status(404).json({ message: "Setting not found" });
+      }
+      
+      res.json(setting);
+    } catch (error) {
+      console.error("Failed to fetch site setting:", error);
+      res.status(500).json({ message: "Failed to fetch site setting" });
+    }
+  });
+
+  app.post("/api/admin/settings", authenticateUser, requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertSiteSettingSchema.parse(req.body);
+      const setting = await storage.setSiteSetting(validatedData);
+      res.status(201).json(setting);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid setting data", errors: error.errors });
+      }
+      console.error("Failed to create site setting:", error);
+      res.status(500).json({ message: "Failed to create site setting" });
+    }
+  });
+
+  app.put("/api/admin/settings/:key", authenticateUser, requireAdmin, async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { value, category, description, isEncrypted } = req.body;
+      
+      const settingData = insertSiteSettingSchema.parse({
+        key,
+        value,
+        category: category || 'general',
+        description,
+        isEncrypted: isEncrypted || false
+      });
+      
+      const setting = await storage.setSiteSetting(settingData);
+      res.json(setting);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid setting data", errors: error.errors });
+      }
+      console.error("Failed to update site setting:", error);
+      res.status(500).json({ message: "Failed to update site setting" });
+    }
+  });
+
+  app.delete("/api/admin/settings/:key", authenticateUser, requireAdmin, async (req, res) => {
+    try {
+      const { key } = req.params;
+      const success = await storage.deleteSiteSetting(key);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Setting not found" });
+      }
+      
+      res.json({ message: "Setting deleted successfully" });
+    } catch (error) {
+      console.error("Failed to delete site setting:", error);
+      res.status(500).json({ message: "Failed to delete site setting" });
+    }
+  });
+
+  // Property Inquiry Routes
+  app.get("/api/admin/property-inquiries", authenticateUser, requireAdmin, async (req, res) => {
+    try {
+      const inquiries = await storage.getPropertyInquiries();
+      res.json(inquiries);
+    } catch (error) {
+      console.error("Failed to fetch property inquiries:", error);
+      res.status(500).json({ message: "Failed to fetch property inquiries" });
+    }
+  });
+
+  app.post("/api/property-inquiries", async (req, res) => {
+    try {
+      const validatedData = insertPropertyInquirySchema.parse(req.body);
+      const inquiry = await storage.createPropertyInquiry(validatedData);
+      res.status(201).json(inquiry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid inquiry data", errors: error.errors });
+      }
+      console.error("Failed to create property inquiry:", error);
+      res.status(500).json({ message: "Failed to create property inquiry" });
+    }
+  });
+
+  app.patch("/api/admin/property-inquiries/:id", authenticateUser, requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      const updatedInquiry = await storage.updatePropertyInquiry(id, updateData);
+      
+      if (!updatedInquiry) {
+        return res.status(404).json({ message: "Property inquiry not found" });
+      }
+      
+      res.json(updatedInquiry);
+    } catch (error) {
+      console.error("Failed to update property inquiry:", error);
+      res.status(500).json({ message: "Failed to update property inquiry" });
     }
   });
 
