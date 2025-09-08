@@ -767,7 +767,7 @@ Test performed on ${new Date().toLocaleString()}
       }
 
       // Create transporter
-      const transporter = nodemailer.createTransporter(config);
+      const transporter = nodemailer.createTransport(config);
       
       const fromEmail = smtpSettings.find((s: any) => s.key === 'smtp_from_email')?.value || config.auth.user;
       const fromName = smtpSettings.find((s: any) => s.key === 'smtp_from_name')?.value || 'Tailored Timeshare Solutions';
