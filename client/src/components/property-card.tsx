@@ -17,18 +17,33 @@ export default function PropertyCard({ property, showNewBadge = false }: Propert
     
     return (
       <div className="flex items-center gap-1">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Star
-            key={i}
-            className={`h-4 w-4 ${
-              i < fullStars 
-                ? "fill-yellow-400 text-yellow-400" 
-                : i === fullStars && hasHalfStar
-                ? "fill-yellow-400/50 text-yellow-400"
-                : "text-gray-300"
-            }`}
-          />
-        ))}
+        {Array.from({ length: 5 }).map((_, i) => {
+          if (i < fullStars) {
+            return (
+              <Star
+                key={i}
+                className="h-4 w-4 fill-yellow-400 text-yellow-400"
+              />
+            );
+          } else if (i === fullStars && hasHalfStar) {
+            return (
+              <div key={i} className="relative h-4 w-4">
+                <Star className="absolute h-4 w-4 text-gray-300" />
+                <Star 
+                  className="absolute h-4 w-4 fill-yellow-400 text-yellow-400"
+                  style={{ clipPath: 'inset(0 50% 0 0)' }}
+                />
+              </div>
+            );
+          } else {
+            return (
+              <Star
+                key={i}
+                className="h-4 w-4 text-gray-300"
+              />
+            );
+          }
+        })}
       </div>
     );
   };

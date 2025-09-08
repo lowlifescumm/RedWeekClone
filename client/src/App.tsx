@@ -14,6 +14,7 @@ import AdminUsers from "@/pages/admin-users";
 import AdminResorts from "@/pages/admin-resorts";
 import AdminInventory from "@/pages/admin-inventory";
 import CreateListing from "@/pages/create-listing";
+import Forums from "@/pages/forums";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/admin/resorts" component={AdminResorts} />
       <Route path="/admin/inventory" component={AdminInventory} />
       <Route path="/create-listing" component={CreateListing} />
+      <Route path="/forums" component={Forums} />
       <Route component={NotFound} />
     </Switch>
   );
