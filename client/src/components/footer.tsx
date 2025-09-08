@@ -69,7 +69,9 @@ export default function Footer() {
                 <a href="#" className="hover:text-white" data-testid="footer-owner-resources">Owner Resources</a>
               </li>
               <li>
-                <a href="#" className="hover:text-white" data-testid="footer-forums">Forums</a>
+                <Link href="/forums">
+                  <a className="hover:text-white" data-testid="footer-forums">Forums</a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -81,7 +83,9 @@ export default function Footer() {
                 <a href="#" className="hover:text-white" data-testid="footer-help-center">Help Center</a>
               </li>
               <li>
-                <a href="#" className="hover:text-white" data-testid="footer-contact">Contact Us</a>
+                <Link href="/contact">
+                  <a className="hover:text-white" data-testid="footer-contact">Contact Us</a>
+                </Link>
               </li>
               <li>
                 <a href="#" className="hover:text-white" data-testid="footer-safety">Safety & Trust</a>

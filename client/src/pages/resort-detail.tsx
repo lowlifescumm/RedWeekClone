@@ -258,13 +258,15 @@ export default function ResortDetail() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Our travel experts are here to help you find the perfect vacation rental.
                 </p>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  data-testid="contact-button"
-                >
-                  Contact Support
-                </Button>
+                <Link href="/contact">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    data-testid="contact-button"
+                  >
+                    Contact Support
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>
