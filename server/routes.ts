@@ -570,10 +570,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create configuration object from settings
+      const secureType = smtpSettings.find((s: any) => s.key === 'smtp_secure')?.value || 'tls';
+      const port = parseInt(smtpSettings.find((s: any) => s.key === 'smtp_port')?.value || '587');
+      
       const config = {
         host: smtpSettings.find((s: any) => s.key === 'smtp_host')?.value,
-        port: parseInt(smtpSettings.find((s: any) => s.key === 'smtp_port')?.value || '587'),
-        secure: false, // true for 465, false for other ports
+        port: port,
+        secure: secureType === 'ssl' || (secureType === 'tls' && port === 465), // true for SSL or port 465
+        requireTLS: secureType === 'tls',
+        ignoreTLS: secureType === 'none',
         auth: {
           user: smtpSettings.find((s: any) => s.key === 'smtp_username')?.value,
           pass: smtpSettings.find((s: any) => s.key === 'smtp_password')?.value,
@@ -612,6 +617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <ul style="color: #374151;">
                 <li><strong>SMTP Host:</strong> ${config.host}</li>
                 <li><strong>SMTP Port:</strong> ${config.port}</li>
+                <li><strong>Security:</strong> ${secureType.toUpperCase()} ${config.secure ? '(SSL)' : config.requireTLS ? '(TLS)' : config.ignoreTLS ? '(None)' : ''}</li>
                 <li><strong>Username:</strong> ${config.auth.user}</li>
                 <li><strong>From Name:</strong> ${fromName}</li>
                 <li><strong>From Email:</strong> ${fromEmail}</li>
@@ -638,6 +644,7 @@ Your SMTP configuration has been successfully tested and is working correctly.
 Configuration Details:
 - SMTP Host: ${config.host}
 - SMTP Port: ${config.port}
+- Security: ${secureType.toUpperCase()} ${config.secure ? '(SSL)' : config.requireTLS ? '(TLS)' : config.ignoreTLS ? '(None)' : ''}
 - Username: ${config.auth.user}
 - From Name: ${fromName}
 - From Email: ${fromEmail}
@@ -662,6 +669,7 @@ Test performed on ${new Date().toLocaleString()}
         config: {
           host: config.host,
           port: config.port,
+          secure: secureType,
           username: config.auth.user,
           fromEmail,
           fromName

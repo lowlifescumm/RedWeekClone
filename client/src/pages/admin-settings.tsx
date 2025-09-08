@@ -254,7 +254,8 @@ export default function AdminSettings() {
   const setupSMTPSettings = () => {
     const smtpSettings = [
       { key: 'smtp_host', value: '', description: 'SMTP Server Host (e.g., smtp.gmail.com)' },
-      { key: 'smtp_port', value: '587', description: 'SMTP Server Port' },
+      { key: 'smtp_port', value: '587', description: 'SMTP Server Port (587 for TLS, 465 for SSL)' },
+      { key: 'smtp_secure', value: 'tls', description: 'Security method: none, tls, or ssl' },
       { key: 'smtp_username', value: '', description: 'SMTP Username/Email' },
       { key: 'smtp_password', value: '', description: 'SMTP Password', isEncrypted: true },
       { key: 'smtp_from_name', value: 'Tailored Timeshare Solutions', description: 'From Name for emails' },
@@ -354,14 +355,27 @@ export default function AdminSettings() {
                               )}
                             </div>
                             <div className="relative">
-                              <Input
-                                type={setting.isEncrypted && !showPasswords.has(setting.key) ? "password" : "text"}
-                                value={smtpForm[setting.key] || ''}
-                                onChange={(e) => handleSmtpFormChange(setting.key, e.target.value)}
-                                className="pr-10"
-                                placeholder={`Enter ${setting.key.replace('smtp_', '').replace('_', ' ')}`}
-                                data-testid={`input-setting-${setting.key}`}
-                              />
+                              {setting.key === 'smtp_secure' ? (
+                                <select
+                                  value={smtpForm[setting.key] || 'tls'}
+                                  onChange={(e) => handleSmtpFormChange(setting.key, e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  data-testid={`select-setting-${setting.key}`}
+                                >
+                                  <option value="none">None (Insecure)</option>
+                                  <option value="tls">TLS/STARTTLS (Recommended)</option>
+                                  <option value="ssl">SSL (Legacy)</option>
+                                </select>
+                              ) : (
+                                <Input
+                                  type={setting.isEncrypted && !showPasswords.has(setting.key) ? "password" : "text"}
+                                  value={smtpForm[setting.key] || ''}
+                                  onChange={(e) => handleSmtpFormChange(setting.key, e.target.value)}
+                                  className="pr-10"
+                                  placeholder={`Enter ${setting.key.replace('smtp_', '').replace('_', ' ')}`}
+                                  data-testid={`input-setting-${setting.key}`}
+                                />
+                              )}
                               {setting.isEncrypted && (
                                 <Button
                                   variant="ghost"
@@ -420,10 +434,11 @@ export default function AdminSettings() {
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <h4 className="font-medium text-blue-900 mb-2">Configuration Help:</h4>
                         <ul className="text-sm text-blue-700 space-y-1">
-                          <li>• <strong>Gmail:</strong> smtp.gmail.com, Port: 587, Use App Password</li>
-                          <li>• <strong>Outlook:</strong> smtp.live.com, Port: 587</li>
-                          <li>• <strong>Yahoo:</strong> smtp.mail.yahoo.com, Port: 587</li>
-                          <li>• Make sure to enable "Less secure apps" or use App Passwords for Gmail</li>
+                          <li>• <strong>Gmail:</strong> smtp.gmail.com, Port: 587, Security: TLS, Use App Password</li>
+                          <li>• <strong>Outlook:</strong> smtp.live.com, Port: 587, Security: TLS</li>
+                          <li>• <strong>Yahoo:</strong> smtp.mail.yahoo.com, Port: 587, Security: TLS</li>
+                          <li>• <strong>SSL (Port 465):</strong> Use SSL security for legacy servers</li>
+                          <li>• <strong>No Security (Port 25):</strong> Only for internal/testing servers</li>
                         </ul>
                       </div>
                     </div>
