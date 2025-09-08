@@ -154,38 +154,47 @@ export default function AdminSettings() {
     setHasUnsavedChanges(true);
   };
 
-  const handleSaveSmtpSettings = () => {
-    Object.entries(smtpForm).forEach(([key, value]) => {
-      const setting = settings.find(s => s.key === key);
-      if (setting && setting.value !== value) {
-        updateSettingMutation.mutate({ 
-          key, 
-          data: { key, value, category: 'smtp', description: setting.description, isEncrypted: setting.isEncrypted } 
-        });
-      }
-    });
-    setHasUnsavedChanges(false);
-    toast({ title: "SMTP settings saved successfully!" });
+  const handleSaveSmtpSettings = async () => {
+    try {
+      // Save all settings at once
+      const savePromises = Object.entries(smtpForm).map(([key, value]) => {
+        const setting = settings.find(s => s.key === key);
+        if (setting && setting.value !== value) {
+          return updateSettingMutation.mutateAsync({ 
+            key, 
+            data: { key, value, category: 'smtp', description: setting.description || '', isEncrypted: setting.isEncrypted } 
+          });
+        }
+        return Promise.resolve();
+      });
+
+      await Promise.all(savePromises);
+      setHasUnsavedChanges(false);
+      toast({ title: "SMTP settings saved successfully!" });
+    } catch (error) {
+      toast({ 
+        title: "Failed to save settings", 
+        description: "Please try again", 
+        variant: "destructive" 
+      });
+    }
   };
 
   const handleTestSmtpConnection = async () => {
+    if (hasUnsavedChanges) {
+      toast({ 
+        title: "Save Settings First", 
+        description: "Please save your SMTP settings before testing the connection.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
     setTestingSmtp(true);
     try {
-      // First save current settings, then test
-      await Promise.all(
-        Object.entries(smtpForm).map(([key, value]) => {
-          const setting = settings.find(s => s.key === key);
-          if (setting) {
-            return updateSettingMutation.mutateAsync({ 
-              key, 
-              data: { key, value, category: 'smtp', description: setting.description, isEncrypted: setting.isEncrypted } 
-            });
-          }
-        })
-      );
-
-      // Test SMTP connection (you can implement actual testing later)
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate test
+      // Test SMTP connection with currently saved settings
+      // For now, we'll simulate the test - you can implement actual SMTP testing later
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       toast({ 
         title: "SMTP Test Successful!", 
@@ -359,11 +368,12 @@ export default function AdminSettings() {
                       <div className="flex items-center gap-3 pt-4 border-t">
                         <Button 
                           onClick={handleSaveSmtpSettings}
-                          disabled={!hasUnsavedChanges || updateSettingMutation.isPending}
+                          disabled={!hasUnsavedChanges}
+                          className={hasUnsavedChanges ? "bg-blue-600 hover:bg-blue-700" : ""}
                           data-testid="button-save-smtp"
                         >
                           <Save className="h-4 w-4 mr-2" />
-                          {updateSettingMutation.isPending ? 'Saving...' : 'Save SMTP Settings'}
+                          Save SMTP Settings
                         </Button>
                         
                         <Button 
@@ -376,7 +386,14 @@ export default function AdminSettings() {
                           {testingSmtp ? 'Testing...' : 'Test Connection'}
                         </Button>
 
-                        {!hasUnsavedChanges && !testingSmtp && (
+                        {hasUnsavedChanges && (
+                          <div className="flex items-center text-orange-600 text-sm font-medium">
+                            <span className="inline-block w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                            You have unsaved changes
+                          </div>
+                        )}
+
+                        {!hasUnsavedChanges && !testingSmtp && settings.some(s => s.category === 'smtp') && (
                           <div className="flex items-center text-green-600 text-sm">
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Settings saved
