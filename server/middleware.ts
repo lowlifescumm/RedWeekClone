@@ -16,32 +16,22 @@ declare global {
   }
 }
 
-// Mock authentication middleware - replace with actual auth implementation
+// Session-based authentication middleware
 export const authenticateUser = async (req: Request, res: Response, next: NextFunction) => {
-  // For development, we'll use a simple username/password check
-  const authHeader = req.headers.authorization;
+  // Check if user is in session (we'll use a simple session store)
+  const userId = (req as any).session?.userId;
   
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!userId) {
     return res.status(401).json({ message: 'Not authenticated' });
   }
 
-  // Extract credentials from the bearer token (base64 encoded username:password)
-  const token = authHeader.substring(7); // Remove 'Bearer '
-  
   try {
-    const credentials = Buffer.from(token, 'base64').toString('utf-8');
-    const [username, password] = credentials.split(':');
-
-    if (!username || !password) {
-      return res.status(401).json({ message: 'Invalid credentials format' });
-    }
-
     // Import storage here to avoid circular dependency
     const { storage } = await import('./storage');
-    const user = await storage.getUserByUsername(username);
+    const user = await storage.getUser(userId);
 
-    if (!user || user.password !== password) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
     }
 
     // Attach user to request (excluding password)
@@ -56,7 +46,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
 
     next();
   } catch (error) {
-    return res.status(401).json({ message: 'Invalid authentication token' });
+    return res.status(401).json({ message: 'Authentication error' });
   }
 };
 

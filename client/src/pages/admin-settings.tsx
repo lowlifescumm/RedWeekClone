@@ -54,11 +54,10 @@ export default function AdminSettings() {
 
   // Create setting mutation
   const createSettingMutation = useMutation({
-    mutationFn: (data: SettingFormData) => fetch('/api/admin/settings', { 
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).then(res => res.json()),
+    mutationFn: async (data: SettingFormData) => {
+      const response = await apiRequest('POST', '/api/admin/settings', data);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/settings'] });
       setNewSetting({ key: '', value: '', category: 'general', description: '', isEncrypted: false });
@@ -75,12 +74,10 @@ export default function AdminSettings() {
 
   // Update setting mutation
   const updateSettingMutation = useMutation({
-    mutationFn: ({ key, data }: { key: string; data: Partial<SettingFormData> }) => 
-      fetch(`/api/admin/settings/${key}`, { 
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      }).then(res => res.json()),
+    mutationFn: async ({ key, data }: { key: string; data: Partial<SettingFormData> }) => {
+      const response = await apiRequest('PUT', `/api/admin/settings/${key}`, data);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/settings'] });
       setEditingSetting(null);
@@ -97,7 +94,10 @@ export default function AdminSettings() {
 
   // Delete setting mutation
   const deleteSettingMutation = useMutation({
-    mutationFn: (key: string) => fetch(`/api/admin/settings/${key}`, { method: 'DELETE' }).then(res => res.json()),
+    mutationFn: async (key: string) => {
+      const response = await apiRequest('DELETE', `/api/admin/settings/${key}`);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/settings'] });
       toast({ title: "Setting deleted successfully" });

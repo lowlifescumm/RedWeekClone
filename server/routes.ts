@@ -167,11 +167,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get current user endpoint
-  app.get("/api/users/me", async (req, res) => {
+  app.get("/api/users/me", authenticateUser, async (req, res) => {
     try {
-      // For now, we'll simulate session with a simple check
-      // In a real app, this would check session/JWT
-      res.status(401).json({ message: "Not authenticated" });
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      res.json(req.user);
     } catch (error) {
       res.status(500).json({ message: "Failed to get current user" });
     }
@@ -180,7 +181,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Logout endpoint
   app.post("/api/users/logout", async (req, res) => {
     try {
-      // In a real app, this would clear session/invalidate JWT
+      // Clear session
+      if ((req as any).session) {
+        (req as any).session.userId = null;
+      }
       res.json({ message: "Logged out successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to logout" });
@@ -344,6 +348,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`Login successful for: ${user.email} (username: ${user.username})`);
+      
+      // Store user ID in session
+      (req as any).session = (req as any).session || {};
+      (req as any).session.userId = user.id;
+      
       // Don't return password
       const { password: _, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
