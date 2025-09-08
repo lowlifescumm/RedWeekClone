@@ -1,6 +1,13 @@
 import { type User, type InsertUser, type Resort, type InsertResort, type Review, type InsertReview, type Booking, type InsertBooking, type Listing, type InsertListing } from "@shared/schema";
 import { randomUUID } from "crypto";
 
+import type { 
+  SiteSetting, 
+  InsertSiteSetting, 
+  PropertyInquiry, 
+  InsertPropertyInquiry 
+} from "@shared/schema";
+
 export interface IStorage {
   // User methods
   getUser(id: string): Promise<User | undefined>;
@@ -32,6 +39,22 @@ export interface IStorage {
   getListing(id: string): Promise<Listing | undefined>;
   createListing(listing: InsertListing): Promise<Listing>;
   updateListing(id: string, updateData: Partial<Omit<Listing, 'id' | 'createdAt'>>): Promise<Listing | undefined>;
+
+  // Site Settings methods
+  getSiteSetting(key: string): Promise<SiteSetting | undefined>;
+  getSiteSettingsByCategory(category: string): Promise<SiteSetting[]>;
+  getAllSiteSettings(): Promise<SiteSetting[]>;
+  setSiteSetting(setting: InsertSiteSetting): Promise<SiteSetting>;
+  deleteSiteSetting(key: string): Promise<boolean>;
+
+  // Property Inquiry methods
+  getPropertyInquiries(): Promise<PropertyInquiry[]>;
+  getPropertyInquiry(id: string): Promise<PropertyInquiry | undefined>;
+  createPropertyInquiry(inquiry: InsertPropertyInquiry): Promise<PropertyInquiry>;
+  updatePropertyInquiry(id: string, updateData: Partial<Omit<PropertyInquiry, 'id' | 'createdAt'>>): Promise<PropertyInquiry | undefined>;
+
+  // Database seeding
+  seedData?(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -419,4 +442,15 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { DatabaseStorage } from "./database-storage";
+
+export const storage = new DatabaseStorage();
+
+// Initialize database with seed data
+(async () => {
+  try {
+    await storage.seedData?.();
+  } catch (error) {
+    console.error("Failed to seed database:", error);
+  }
+})();

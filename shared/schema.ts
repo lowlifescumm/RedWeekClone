@@ -74,6 +74,34 @@ export const listings = pgTable("listings", {
   createdAt: timestamp("created_at").defaultNow()
 });
 
+export const siteSettings = pgTable("site_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  category: text("category").notNull().default("general"),
+  description: text("description"),
+  isEncrypted: boolean("is_encrypted").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+export const propertyInquiries = pgTable("property_inquiries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  propertyName: text("property_name").notNull(),
+  location: text("location").notNull(),
+  ownershipType: text("ownership_type").notNull(),
+  weekNumbers: text("week_numbers"),
+  askingPrice: integer("asking_price"),
+  motivation: text("motivation").notNull(),
+  additionalInfo: text("additional_info"),
+  status: text("status").notNull().default("new"),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true
@@ -105,6 +133,18 @@ export const insertListingSchema = createInsertSchema(listings).omit({
   ownershipVerified: true
 });
 
+export const insertSiteSettingSchema = createInsertSchema(siteSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertPropertyInquirySchema = createInsertSchema(propertyInquiries).omit({
+  id: true,
+  createdAt: true,
+  status: true
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Resort = typeof resorts.$inferSelect;
@@ -115,3 +155,7 @@ export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type Listing = typeof listings.$inferSelect;
 export type InsertListing = z.infer<typeof insertListingSchema>;
+export type SiteSetting = typeof siteSettings.$inferSelect;
+export type InsertSiteSetting = z.infer<typeof insertSiteSettingSchema>;
+export type PropertyInquiry = typeof propertyInquiries.$inferSelect;
+export type InsertPropertyInquiry = z.infer<typeof insertPropertyInquirySchema>;
