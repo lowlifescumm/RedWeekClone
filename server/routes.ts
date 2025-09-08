@@ -709,6 +709,183 @@ Test performed on ${new Date().toLocaleString()}
     }
   });
 
+  // Property Submission endpoint - for sell form
+  app.post("/api/property-submissions", authenticateUser, async (req, res) => {
+    try {
+      // Get user info
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      // Validate property submission data
+      const propertySubmissionSchema = z.object({
+        propertyName: z.string().min(1, "Property name is required"),
+        resortName: z.string().min(1, "Resort name is required"),
+        location: z.string().min(1, "Location is required"),
+        unit: z.string().min(1, "Unit details are required"),
+        ownership: z.string().min(1, "Ownership details are required"),
+        weekDetails: z.string().min(1, "Week/season details are required"),
+        askingPrice: z.string().min(1, "Asking price is required"),
+        contactPhone: z.string().min(1, "Phone number is required"),
+        additionalDetails: z.string().optional(),
+      });
+
+      const validatedData = propertySubmissionSchema.parse(req.body);
+
+      // Get SMTP settings from database
+      const settings = await storage.getAllSiteSettings();
+      const smtpSettings = settings.filter((s: any) => s.category === 'smtp');
+      
+      if (smtpSettings.length === 0) {
+        return res.status(500).json({ 
+          message: "Email configuration not available. Please contact support." 
+        });
+      }
+
+      // Create configuration object from settings
+      const secureType = smtpSettings.find((s: any) => s.key === 'smtp_secure')?.value || 'tls';
+      const port = parseInt(smtpSettings.find((s: any) => s.key === 'smtp_port')?.value || '587');
+      
+      const config = {
+        host: smtpSettings.find((s: any) => s.key === 'smtp_host')?.value,
+        port: port,
+        secure: secureType === 'ssl' || (secureType === 'tls' && port === 465),
+        requireTLS: secureType === 'tls',
+        ignoreTLS: secureType === 'none',
+        auth: {
+          user: smtpSettings.find((s: any) => s.key === 'smtp_username')?.value,
+          pass: smtpSettings.find((s: any) => s.key === 'smtp_password')?.value,
+        },
+      };
+
+      // Validate required settings
+      if (!config.host || !config.auth.user || !config.auth.pass) {
+        return res.status(500).json({
+          message: "Email configuration incomplete. Please contact support."
+        });
+      }
+
+      // Create transporter
+      const transporter = nodemailer.createTransporter(config);
+      
+      const fromEmail = smtpSettings.find((s: any) => s.key === 'smtp_from_email')?.value || config.auth.user;
+      const fromName = smtpSettings.find((s: any) => s.key === 'smtp_from_name')?.value || 'Tailored Timeshare Solutions';
+
+      const mailOptions = {
+        from: `"${fromName}" <${fromEmail}>`,
+        to: 'sales@tailoredtimesharesolutions.com',
+        subject: `New Property Submission - ${validatedData.propertyName}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2563eb;">New Property Submission for Sale</h2>
+            <p>A property owner has submitted their timeshare for evaluation and potential sale assistance.</p>
+            
+            <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #1e40af; margin-top: 0;">Property Details:</h3>
+              <div style="color: #374151;">
+                <p><strong>Property Name:</strong> ${validatedData.propertyName}</p>
+                <p><strong>Resort Name:</strong> ${validatedData.resortName}</p>
+                <p><strong>Location:</strong> ${validatedData.location}</p>
+                <p><strong>Unit Details:</strong> ${validatedData.unit}</p>
+                <p><strong>Ownership Type:</strong> ${validatedData.ownership}</p>
+                <p><strong>Week/Season Details:</strong> ${validatedData.weekDetails}</p>
+                <p><strong>Asking Price:</strong> ${validatedData.askingPrice}</p>
+              </div>
+            </div>
+
+            <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #374151; margin-top: 0;">Owner Contact Information:</h3>
+              <div style="color: #374151;">
+                <p><strong>Name:</strong> ${user.firstName} ${user.lastName}</p>
+                <p><strong>Email:</strong> ${user.email}</p>
+                <p><strong>Phone:</strong> ${validatedData.contactPhone}</p>
+              </div>
+            </div>
+
+            ${validatedData.additionalDetails ? `
+            <div style="background-color: #fefce8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #8b5a2b; margin-top: 0;">Additional Details:</h3>
+              <p style="color: #374151;">${validatedData.additionalDetails}</p>
+            </div>
+            ` : ''}
+
+            <div style="background-color: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #065f46; margin-top: 0;">Next Steps:</h3>
+              <ul style="color: #374151;">
+                <li>Contact the property owner within 24 hours</li>
+                <li>Evaluate the property details and market value</li>
+                <li>Discuss selling options and our services</li>
+                <li>Schedule a consultation if appropriate</li>
+              </ul>
+            </div>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #9ca3af; font-size: 12px;">
+              Submitted from TailoredTimeshareSolutions.com<br>
+              Submission time: ${new Date().toLocaleString()}<br>
+              User ID: ${user.id}
+            </p>
+          </div>
+        `,
+        text: `
+New Property Submission for Sale
+
+Property Details:
+- Property Name: ${validatedData.propertyName}
+- Resort Name: ${validatedData.resortName}
+- Location: ${validatedData.location}
+- Unit Details: ${validatedData.unit}
+- Ownership Type: ${validatedData.ownership}
+- Week/Season Details: ${validatedData.weekDetails}
+- Asking Price: ${validatedData.askingPrice}
+
+Owner Contact Information:
+- Name: ${user.firstName} ${user.lastName}
+- Email: ${user.email}
+- Phone: ${validatedData.contactPhone}
+
+${validatedData.additionalDetails ? `Additional Details: ${validatedData.additionalDetails}` : ''}
+
+Next Steps:
+- Contact the property owner within 24 hours
+- Evaluate the property details and market value
+- Discuss selling options and our services
+- Schedule a consultation if appropriate
+
+Submitted from TailoredTimeshareSolutions.com
+Submission time: ${new Date().toLocaleString()}
+User ID: ${user.id}
+        `
+      };
+
+      // Send the email
+      const info = await transporter.sendMail(mailOptions);
+      
+      console.log('Property submission email sent successfully:', info.messageId);
+      
+      res.json({ 
+        success: true, 
+        message: "Property submission sent successfully. Our team will contact you within 24 hours.",
+        messageId: info.messageId
+      });
+      
+    } catch (error: any) {
+      console.error("Property submission failed:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid property information provided",
+          errors: error.errors
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Failed to submit property information. Please try again later." 
+      });
+    }
+  });
+
   // Property Inquiry Routes
   app.get("/api/admin/property-inquiries", authenticateUser, requireAdmin, async (req, res) => {
     try {
