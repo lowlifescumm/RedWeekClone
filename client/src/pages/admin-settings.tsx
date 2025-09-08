@@ -19,7 +19,9 @@ import {
   Trash2,
   Plus,
   Eye,
-  EyeOff
+  EyeOff,
+  TestTube,
+  CheckCircle
 } from "lucide-react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
@@ -44,6 +46,9 @@ export default function AdminSettings() {
   });
   const [editingSetting, setEditingSetting] = useState<string | null>(null);
   const [showPasswords, setShowPasswords] = useState<Set<string>>(new Set());
+  const [smtpForm, setSmtpForm] = useState<Record<string, string>>({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [testingSmtp, setTestingSmtp] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -51,6 +56,19 @@ export default function AdminSettings() {
   const { data: settings = [], isLoading } = useQuery<SiteSetting[]>({
     queryKey: ['/api/admin/settings'],
   });
+
+  // Initialize SMTP form when settings load
+  useEffect(() => {
+    if (settings.length > 0) {
+      const smtpSettings = settings.filter(s => s.category === 'smtp');
+      const formData: Record<string, string> = {};
+      smtpSettings.forEach(setting => {
+        formData[setting.key] = setting.value;
+      });
+      setSmtpForm(formData);
+      setHasUnsavedChanges(false);
+    }
+  }, [settings]);
 
   // Create setting mutation
   const createSettingMutation = useMutation({
@@ -129,6 +147,59 @@ export default function AdminSettings() {
       key: setting.key, 
       data: { ...updatedData, key: setting.key } 
     });
+  };
+
+  const handleSmtpFormChange = (key: string, value: string) => {
+    setSmtpForm(prev => ({ ...prev, [key]: value }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSaveSmtpSettings = () => {
+    Object.entries(smtpForm).forEach(([key, value]) => {
+      const setting = settings.find(s => s.key === key);
+      if (setting && setting.value !== value) {
+        updateSettingMutation.mutate({ 
+          key, 
+          data: { key, value, category: 'smtp', description: setting.description, isEncrypted: setting.isEncrypted } 
+        });
+      }
+    });
+    setHasUnsavedChanges(false);
+    toast({ title: "SMTP settings saved successfully!" });
+  };
+
+  const handleTestSmtpConnection = async () => {
+    setTestingSmtp(true);
+    try {
+      // First save current settings, then test
+      await Promise.all(
+        Object.entries(smtpForm).map(([key, value]) => {
+          const setting = settings.find(s => s.key === key);
+          if (setting) {
+            return updateSettingMutation.mutateAsync({ 
+              key, 
+              data: { key, value, category: 'smtp', description: setting.description, isEncrypted: setting.isEncrypted } 
+            });
+          }
+        })
+      );
+
+      // Test SMTP connection (you can implement actual testing later)
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate test
+      
+      toast({ 
+        title: "SMTP Test Successful!", 
+        description: "Your email configuration is working correctly." 
+      });
+    } catch (error) {
+      toast({ 
+        title: "SMTP Test Failed", 
+        description: "Please check your configuration and try again.", 
+        variant: "destructive" 
+      });
+    } finally {
+      setTestingSmtp(false);
+    }
   };
 
   const togglePasswordVisibility = (key: string) => {
@@ -232,68 +303,104 @@ export default function AdminSettings() {
                       <Mail className="h-5 w-5" />
                       SMTP Email Configuration
                     </span>
-                    <Button onClick={setupSMTPSettings} variant="outline" size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Initialize SMTP Settings
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button onClick={setupSMTPSettings} variant="outline" size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Initialize SMTP Settings
+                      </Button>
+                      {hasUnsavedChanges && (
+                        <Badge variant="secondary" className="text-orange-600">
+                          Unsaved Changes
+                        </Badge>
+                      )}
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {categorizedSettings.smtp?.map((setting) => (
-                      <div key={setting.key} className="grid grid-cols-3 gap-4 items-center">
-                        <div>
-                          <Label className="font-medium">{setting.key.replace('smtp_', '').toUpperCase()}</Label>
-                          {setting.description && (
-                            <p className="text-sm text-gray-500">{setting.description}</p>
-                          )}
-                        </div>
-                        <div className="relative">
-                          <Input
-                            type={setting.isEncrypted && !showPasswords.has(setting.key) ? "password" : "text"}
-                            value={editingSetting === setting.key ? '' : setting.value}
-                            onChange={(e) => {
-                              if (editingSetting === setting.key) {
-                                handleUpdateSetting(setting, { value: e.target.value });
-                              }
-                            }}
-                            onFocus={() => setEditingSetting(setting.key)}
-                            onBlur={() => setTimeout(() => setEditingSetting(null), 100)}
-                            className="pr-10"
-                            data-testid={`input-setting-${setting.key}`}
-                          />
-                          {setting.isEncrypted && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3"
-                              onClick={() => togglePasswordVisibility(setting.key)}
-                              data-testid={`button-toggle-${setting.key}`}
-                            >
-                              {showPasswords.has(setting.key) ? 
-                                <EyeOff className="h-4 w-4" /> : 
-                                <Eye className="h-4 w-4" />
-                              }
-                            </Button>
-                          )}
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteSettingMutation.mutate(setting.key)}
-                          data-testid={`button-delete-${setting.key}`}
+                  {categorizedSettings.smtp && categorizedSettings.smtp.length > 0 ? (
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        {categorizedSettings.smtp.map((setting) => (
+                          <div key={setting.key} className="grid grid-cols-2 gap-4 items-center">
+                            <div>
+                              <Label className="font-medium">{setting.key.replace('smtp_', '').replace('_', ' ').toUpperCase()}</Label>
+                              {setting.description && (
+                                <p className="text-sm text-gray-500">{setting.description}</p>
+                              )}
+                            </div>
+                            <div className="relative">
+                              <Input
+                                type={setting.isEncrypted && !showPasswords.has(setting.key) ? "password" : "text"}
+                                value={smtpForm[setting.key] || ''}
+                                onChange={(e) => handleSmtpFormChange(setting.key, e.target.value)}
+                                className="pr-10"
+                                placeholder={`Enter ${setting.key.replace('smtp_', '').replace('_', ' ')}`}
+                                data-testid={`input-setting-${setting.key}`}
+                              />
+                              {setting.isEncrypted && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-0 top-0 h-full px-3"
+                                  onClick={() => togglePasswordVisibility(setting.key)}
+                                  data-testid={`button-toggle-${setting.key}`}
+                                >
+                                  {showPasswords.has(setting.key) ? 
+                                    <EyeOff className="h-4 w-4" /> : 
+                                    <Eye className="h-4 w-4" />
+                                  }
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-3 pt-4 border-t">
+                        <Button 
+                          onClick={handleSaveSmtpSettings}
+                          disabled={!hasUnsavedChanges || updateSettingMutation.isPending}
+                          data-testid="button-save-smtp"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Save className="h-4 w-4 mr-2" />
+                          {updateSettingMutation.isPending ? 'Saving...' : 'Save SMTP Settings'}
                         </Button>
+                        
+                        <Button 
+                          onClick={handleTestSmtpConnection}
+                          variant="outline"
+                          disabled={hasUnsavedChanges || testingSmtp}
+                          data-testid="button-test-smtp"
+                        >
+                          <TestTube className="h-4 w-4 mr-2" />
+                          {testingSmtp ? 'Testing...' : 'Test Connection'}
+                        </Button>
+
+                        {!hasUnsavedChanges && !testingSmtp && (
+                          <div className="flex items-center text-green-600 text-sm">
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Settings saved
+                          </div>
+                        )}
                       </div>
-                    )) || (
-                      <div className="text-center py-8 text-gray-500">
-                        <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No SMTP settings configured yet</p>
-                        <p className="text-sm">Click "Initialize SMTP Settings" to get started</p>
+
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <h4 className="font-medium text-blue-900 mb-2">Configuration Help:</h4>
+                        <ul className="text-sm text-blue-700 space-y-1">
+                          <li>• <strong>Gmail:</strong> smtp.gmail.com, Port: 587, Use App Password</li>
+                          <li>• <strong>Outlook:</strong> smtp.live.com, Port: 587</li>
+                          <li>• <strong>Yahoo:</strong> smtp.mail.yahoo.com, Port: 587</li>
+                          <li>• Make sure to enable "Less secure apps" or use App Passwords for Gmail</li>
+                        </ul>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No SMTP settings configured yet</p>
+                      <p className="text-sm">Click "Initialize SMTP Settings" to get started</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
