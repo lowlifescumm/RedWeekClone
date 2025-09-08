@@ -1,15 +1,18 @@
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Calendar, Heart, Settings } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { User, Calendar, Heart, Settings, Home } from "lucide-react";
+import { PropertySubmissionForm } from "@/components/property-submission-form";
 
 export default function Dashboard() {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+  const [isPropertyModalOpen, setIsPropertyModalOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -47,7 +50,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Profile Card */}
           <Card data-testid="profile-card">
             <CardHeader>
@@ -111,6 +114,47 @@ export default function Dashboard() {
               <Button variant="outline" className="w-full" data-testid="explore-resorts-button">
                 Explore Resorts
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* My Property Card */}
+          <Card data-testid="property-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Home className="h-5 w-5" />
+                My Property
+              </CardTitle>
+              <CardDescription>
+                Sell or rent your timeshare
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-4 text-muted-foreground">
+                <p className="mb-4">Ready to sell or rent your timeshare?</p>
+                <p className="text-sm mb-6">Submit your property details and our team will contact you within 24 hours.</p>
+              </div>
+              <Dialog open={isPropertyModalOpen} onOpenChange={setIsPropertyModalOpen}>
+                <DialogTrigger asChild>
+                  <Button className="w-full" data-testid="sell-rent-property-button">
+                    <Home className="h-4 w-4 mr-2" />
+                    Sell or Rent My Property
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Home className="h-5 w-5" />
+                      Submit Your Property
+                    </DialogTitle>
+                    <DialogDescription>
+                      Fill out the form below and our team will contact you within 24 hours to discuss selling or renting your timeshare.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <PropertySubmissionForm 
+                    onSuccess={() => setIsPropertyModalOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </div>
