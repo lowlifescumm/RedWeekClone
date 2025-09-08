@@ -74,7 +74,7 @@ export class MemStorage implements IStorage {
     this.migrateUserData();
   }
 
-  private seedData() {
+  private async seedData() {
     // Seed resort data
     const seedResorts: Resort[] = [
       {
@@ -420,6 +420,7 @@ export class MemStorage implements IStorage {
       contractVerificationStatus: "pending",
       escrowStatus: "none",
       ownershipVerified: false,
+      contractDocumentUrl: insertListing.contractDocumentUrl || null,
       createdAt: new Date() 
     };
     this.listings.set(id, listing);
