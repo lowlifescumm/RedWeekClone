@@ -197,18 +197,29 @@ export default function AdminSettings() {
 
     setTestingSmtp(true);
     try {
-      // Test SMTP connection with currently saved settings
-      // For now, we'll simulate the test - you can implement actual SMTP testing later
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Test SMTP connection with real backend endpoint
+      const response = await apiRequest('POST', '/api/admin/smtp/test');
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({ 
+          title: "SMTP Test Successful!", 
+          description: `${result.message} Email sent with message ID: ${result.messageId?.substring(0, 8) || 'N/A'}` 
+        });
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error: any) {
+      console.error('SMTP test error:', error);
+      
+      let errorMessage = "Please check your configuration and try again.";
+      if (error.message) {
+        errorMessage = error.message;
+      }
       
       toast({ 
-        title: "SMTP Test Successful!", 
-        description: "Your email configuration is working correctly." 
-      });
-    } catch (error) {
-      toast({ 
         title: "SMTP Test Failed", 
-        description: "Please check your configuration and try again.", 
+        description: errorMessage,
         variant: "destructive" 
       });
     } finally {

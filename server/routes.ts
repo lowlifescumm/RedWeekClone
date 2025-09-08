@@ -14,6 +14,7 @@ import { inventoryService } from "./inventory-service";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { authenticateUser, requireAdmin, requireAuth } from "./middleware";
 import { z } from "zod";
+import nodemailer from "nodemailer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Resort routes
@@ -551,6 +552,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to delete site setting:", error);
       res.status(500).json({ message: "Failed to delete site setting" });
+    }
+  });
+
+  // SMTP Test endpoint
+  app.post("/api/admin/smtp/test", authenticateUser, requireAdmin, async (req, res) => {
+    try {
+      // Get SMTP settings from database
+      const settings = await storage.getAllSiteSettings();
+      const smtpSettings = settings.filter((s: any) => s.category === 'smtp');
+      
+      if (smtpSettings.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "No SMTP settings found. Please configure SMTP settings first." 
+        });
+      }
+
+      // Create configuration object from settings
+      const config = {
+        host: smtpSettings.find((s: any) => s.key === 'smtp_host')?.value,
+        port: parseInt(smtpSettings.find((s: any) => s.key === 'smtp_port')?.value || '587'),
+        secure: false, // true for 465, false for other ports
+        auth: {
+          user: smtpSettings.find((s: any) => s.key === 'smtp_username')?.value,
+          pass: smtpSettings.find((s: any) => s.key === 'smtp_password')?.value,
+        },
+      };
+
+      // Validate required settings
+      if (!config.host || !config.auth.user || !config.auth.pass) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required SMTP settings (host, username, or password)."
+        });
+      }
+
+      // Create transporter and test connection
+      const transporter = nodemailer.createTransport(config);
+      
+      // Verify connection
+      await transporter.verify();
+
+      // Send test email to sales@tailoredtimesharesolutions.com
+      const fromEmail = smtpSettings.find((s: any) => s.key === 'smtp_from_email')?.value || config.auth.user;
+      const fromName = smtpSettings.find((s: any) => s.key === 'smtp_from_name')?.value || 'Tailored Timeshare Solutions';
+
+      const mailOptions = {
+        from: `"${fromName}" <${fromEmail}>`,
+        to: 'sales@tailoredtimesharesolutions.com',
+        subject: 'SMTP Configuration Test - SUCCESS',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2563eb;">SMTP Settings Successful!</h2>
+            <p>Your SMTP configuration has been successfully tested and is working correctly.</p>
+            
+            <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #1e40af; margin-top: 0;">Configuration Details:</h3>
+              <ul style="color: #374151;">
+                <li><strong>SMTP Host:</strong> ${config.host}</li>
+                <li><strong>SMTP Port:</strong> ${config.port}</li>
+                <li><strong>Username:</strong> ${config.auth.user}</li>
+                <li><strong>From Name:</strong> ${fromName}</li>
+                <li><strong>From Email:</strong> ${fromEmail}</li>
+              </ul>
+            </div>
+
+            <p style="color: #6b7280;">
+              This email was automatically sent to confirm your SMTP settings are working properly.
+              You can now send emails from your Tailored Timeshare Solutions application.
+            </p>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #9ca3af; font-size: 12px;">
+              Sent from Tailored Timeshare Solutions Admin Panel<br>
+              Test performed on ${new Date().toLocaleString()}
+            </p>
+          </div>
+        `,
+        text: `
+SMTP Settings Successful!
+
+Your SMTP configuration has been successfully tested and is working correctly.
+
+Configuration Details:
+- SMTP Host: ${config.host}
+- SMTP Port: ${config.port}
+- Username: ${config.auth.user}
+- From Name: ${fromName}
+- From Email: ${fromEmail}
+
+This email was automatically sent to confirm your SMTP settings are working properly.
+You can now send emails from your Tailored Timeshare Solutions application.
+
+Sent from Tailored Timeshare Solutions Admin Panel
+Test performed on ${new Date().toLocaleString()}
+        `
+      };
+
+      // Send the email
+      const info = await transporter.sendMail(mailOptions);
+      
+      console.log('SMTP test email sent successfully:', info.messageId);
+      
+      res.json({ 
+        success: true, 
+        message: "SMTP connection successful! Test email sent to sales@tailoredtimesharesolutions.com",
+        messageId: info.messageId,
+        config: {
+          host: config.host,
+          port: config.port,
+          username: config.auth.user,
+          fromEmail,
+          fromName
+        }
+      });
+      
+    } catch (error: any) {
+      console.error("SMTP test failed:", error);
+      
+      let errorMessage = "Unknown SMTP error occurred";
+      if (error.code) {
+        switch (error.code) {
+          case 'EAUTH':
+            errorMessage = "Authentication failed. Please check your username and password.";
+            break;
+          case 'ECONNECTION':
+            errorMessage = "Could not connect to SMTP server. Please check your host and port.";
+            break;
+          case 'ETIMEDOUT':
+            errorMessage = "Connection timed out. Please check your host and port settings.";
+            break;
+          case 'ENOTFOUND':
+            errorMessage = "SMTP server not found. Please check your host setting.";
+            break;
+          default:
+            errorMessage = error.message || errorMessage;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      res.status(400).json({ 
+        success: false, 
+        message: errorMessage,
+        code: error.code || 'UNKNOWN_ERROR'
+      });
     }
   });
 
