@@ -12,6 +12,7 @@ import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import AdminUsers from "@/pages/admin-users";
 import AdminResorts from "@/pages/admin-resorts";
+import AdminSettings from "@/pages/admin-settings";
 import AdminInventory from "@/pages/admin-inventory";
 import CreateListing from "@/pages/create-listing";
 import Forums from "@/pages/forums";
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/resorts" component={AdminResorts} />
+      <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/inventory" component={AdminInventory} />
       <Route path="/create-listing" component={CreateListing} />
       <Route path="/forums" component={Forums} />
