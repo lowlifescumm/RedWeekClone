@@ -143,6 +143,11 @@ export default function AdminSettings() {
   };
 
   const handleUpdateSetting = (setting: SiteSetting, updatedData: Partial<SettingFormData>) => {
+    // Don't auto-save SMTP settings - they have their own form handling
+    if (setting.category === 'smtp') {
+      return;
+    }
+    
     updateSettingMutation.mutate({ 
       key: setting.key, 
       data: { ...updatedData, key: setting.key } 
@@ -513,8 +518,14 @@ export default function AdminSettings() {
                               <div className="relative">
                                 <Input
                                   type={setting.isEncrypted && !showPasswords.has(setting.key) ? "password" : "text"}
-                                  value={setting.value}
-                                  onChange={(e) => handleUpdateSetting(setting, { value: e.target.value })}
+                                  value={setting.category === 'smtp' ? (smtpForm[setting.key] || '') : setting.value}
+                                  onChange={(e) => {
+                                    if (setting.category === 'smtp') {
+                                      handleSmtpFormChange(setting.key, e.target.value);
+                                    } else {
+                                      handleUpdateSetting(setting, { value: e.target.value });
+                                    }
+                                  }}
                                   className="pr-10"
                                   data-testid={`input-setting-${setting.key}`}
                                 />
