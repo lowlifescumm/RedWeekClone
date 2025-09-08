@@ -50,7 +50,7 @@ export function PropertySubmissionForm({ onSuccess }: PropertySubmissionFormProp
 
   const submitPropertyMutation = useMutation({
     mutationFn: async (data: PropertySubmissionData) => {
-      return apiRequest('/api/property-submissions', 'POST', data);
+      return apiRequest('POST', '/api/property-submissions', data);
     },
     onSuccess: () => {
       toast({
