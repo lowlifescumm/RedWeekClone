@@ -70,8 +70,7 @@ export class MemStorage implements IStorage {
     this.reviews = new Map();
     this.bookings = new Map();
     this.listings = new Map();
-    this.seedData();
-    this.migrateUserData();
+    this.seedData().then(() => this.migrateUserData());
   }
 
   private async seedData() {
