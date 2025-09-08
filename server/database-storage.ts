@@ -473,6 +473,71 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Seed site settings (SMTP configuration)
+    await this.seedSiteSettings();
+
     console.log("Database seeding completed!");
+  }
+
+  private async seedSiteSettings(): Promise<void> {
+    // Check if SMTP settings already exist
+    const existingSmtpSettings = await db.select()
+      .from(siteSettings)
+      .where(eq(siteSettings.category, 'smtp'));
+    
+    if (existingSmtpSettings.length > 0) {
+      console.log("SMTP settings already exist, skipping site settings seed");
+      return;
+    }
+
+    console.log("Seeding SMTP site settings...");
+
+    const smtpSettings = [
+      {
+        key: 'smtp_host',
+        value: 'mail.tailoredtimesharesolutions.com',
+        category: 'smtp',
+        description: 'SMTP Server Host (e.g., smtp.gmail.com)',
+        isEncrypted: false
+      },
+      {
+        key: 'smtp_port',
+        value: '465',
+        category: 'smtp', 
+        description: 'SMTP Server Port',
+        isEncrypted: false
+      },
+      {
+        key: 'smtp_username',
+        value: 'sales@tailoredtimesharesolutions.com',
+        category: 'smtp',
+        description: 'SMTP Username/Email', 
+        isEncrypted: false
+      },
+      {
+        key: 'smtp_password',
+        value: 'v8@Gn15AeQZ6mWsG',
+        category: 'smtp',
+        description: 'SMTP Password',
+        isEncrypted: true
+      },
+      {
+        key: 'smtp_from_email',
+        value: 'sales@tailoredtimesharesolutions.com',
+        category: 'smtp',
+        description: 'From Email Address',
+        isEncrypted: false
+      },
+      {
+        key: 'smtp_from_name', 
+        value: 'Tailored Timeshare Solutions',
+        category: 'smtp',
+        description: 'From Name for emails',
+        isEncrypted: false
+      }
+    ];
+
+    await db.insert(siteSettings).values(smtpSettings);
+    console.log(`Seeded ${smtpSettings.length} SMTP settings`);
   }
 }
