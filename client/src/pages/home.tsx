@@ -66,7 +66,7 @@ export default function Home() {
                   <Star className="h-5 w-5 fill-current" />
                   <Star className="h-5 w-5 fill-current" />
                   <Star className="h-5 w-5 fill-current" />
-                  <Star className="h-5 w-5 fill-current" />
+                  <Star className="h-5 w-5" />
                 </div>
                 <span className="font-semibold" data-testid="trust-rating-text">Excellent</span>
               </div>
