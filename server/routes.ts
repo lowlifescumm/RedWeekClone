@@ -192,6 +192,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user profile (authenticated users can update their own profile)
+  app.patch("/api/users/:id", authenticateUser, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      // Only allow users to update their own profile
+      if (req.user?.id !== id) {
+        return res.status(403).json({ message: "Forbidden: You can only update your own profile" });
+      }
+
+      // Validate the update data
+      const allowedFields = ['firstName', 'lastName', 'username', 'email'];
+      const updateData = Object.keys(updates)
+        .filter(key => allowedFields.includes(key))
+        .reduce((obj, key) => {
+          obj[key] = updates[key];
+          return obj;
+        }, {} as any);
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ message: "No valid fields to update" });
+      }
+
+      // Check if username or email already exists (if being updated)
+      if (updateData.username) {
+        const existingUser = await storage.getUserByUsername(updateData.username);
+        if (existingUser && existingUser.id !== id) {
+          return res.status(400).json({ message: "Username already exists" });
+        }
+      }
+
+      if (updateData.email) {
+        const existingUser = await storage.getUserByEmail(updateData.email);
+        if (existingUser && existingUser.id !== id) {
+          return res.status(400).json({ message: "Email already exists" });
+        }
+      }
+
+      // Update the user
+      const updatedUser = await storage.updateUser(id, updateData);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return updated user (without password)
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user profile" });
+    }
+  });
+
   // Admin routes - now protected with authentication
   app.get("/api/admin/users", authenticateUser, requireAdmin, async (req, res) => {
     try {
