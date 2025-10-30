@@ -1,0 +1,23 @@
+services:
+  - name: redweek-clone
+    type: web
+    env: node
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      # Add your storage/database vars below as needed
+      # - key: DATABASE_URL
+      #   value: postgres://user:pass@host:5432/db
+      # - key: OBJECT_STORAGE_BUCKET
+      #   value: your-bucket
+      # - key: OBJECT_STORAGE_KEY
+      #   value: your-key
+      # - key: OBJECT_STORAGE_SECRET
+      #   value: your-secret
+
