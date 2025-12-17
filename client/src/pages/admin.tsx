@@ -228,7 +228,12 @@ export default function Admin() {
                   </Badge>
                 </div>
               </div>
-              <Button variant="outline" className="w-full" data-testid="system-settings-button">
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                data-testid="system-settings-button"
+                onClick={() => setLocation("/admin/settings")}
+              >
                 System Settings
               </Button>
             </CardContent>
