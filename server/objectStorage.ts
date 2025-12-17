@@ -2,24 +2,47 @@ import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
 import { Response } from "express";
 import { randomUUID } from "crypto";
 
-// Initialize Cloudinary with environment variables
+// Initialize Cloudinary with proper fallback handling
 // Parse CLOUDINARY_URL if provided (format: cloudinary://api_key:api_secret@cloud_name)
+let cloudinaryConfigured = false;
+
 if (process.env.CLOUDINARY_URL) {
   const urlMatch = process.env.CLOUDINARY_URL.match(/cloudinary:\/\/([^:]+):([^@]+)@([^\/]+)/);
-  if (urlMatch) {
+  if (urlMatch && urlMatch[1] && urlMatch[2] && urlMatch[3]) {
+    // Successfully parsed CLOUDINARY_URL
     cloudinary.config({
       cloud_name: urlMatch[3],
       api_key: urlMatch[1],
       api_secret: urlMatch[2],
     });
+    cloudinaryConfigured = true;
+  } else {
+    // CLOUDINARY_URL exists but is malformed - log warning and fall through to individual vars
+    console.warn(
+      "CLOUDINARY_URL is set but malformed. Falling back to individual environment variables."
+    );
   }
-} else {
-  // Use individual environment variables
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || '',
-    api_key: process.env.CLOUDINARY_API_KEY || '',
-    api_secret: process.env.CLOUDINARY_API_SECRET || '',
-  });
+}
+
+// Fallback to individual environment variables if CLOUDINARY_URL wasn't used or was malformed
+if (!cloudinaryConfigured) {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  if (cloudName && apiKey && apiSecret) {
+    cloudinary.config({
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
+    });
+    cloudinaryConfigured = true;
+  } else {
+    // Warn if neither method worked, but don't throw (allows for lazy initialization)
+    console.warn(
+      "Cloudinary not configured. Set CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET"
+    );
+  }
 }
 
 export class ObjectNotFoundError extends Error {
@@ -68,7 +91,17 @@ export class ObjectStorageService {
     return dir;
   }
 
+  private ensureCloudinaryConfigured(): void {
+    if (!cloudinaryConfigured) {
+      throw new Error(
+        "Cloudinary is not configured. Please set CLOUDINARY_URL or individual credentials (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)"
+      );
+    }
+  }
+
   async searchPublicObject(filePath: string): Promise<string | null> {
+    this.ensureCloudinaryConfigured();
+    
     // Cloudinary doesn't have a direct "search" - we'll try to get the resource
     // For public files, we can construct the URL directly
     for (const searchPath of this.getPublicObjectSearchPaths()) {
@@ -110,13 +143,14 @@ export class ObjectStorageService {
   }
 
   async getObjectEntityUploadURL(): Promise<string> {
+    this.ensureCloudinaryConfigured();
+    
     const privateFolder = this.getPrivateObjectDir();
     const objectId = randomUUID();
     
     // Generate upload signature for Cloudinary
-    // Cloudinary uses upload presets or signed uploads
     const timestamp = Math.round(new Date().getTime() / 1000);
-    const apiSecret = process.env.CLOUDINARY_API_SECRET || cloudinary.config().api_secret || '';
+    const apiSecret = cloudinary.config().api_secret;
     
     if (!apiSecret) {
       throw new Error('CLOUDINARY_API_SECRET must be set');
@@ -132,8 +166,12 @@ export class ObjectStorageService {
       apiSecret
     );
 
-    const apiKey = process.env.CLOUDINARY_API_KEY || cloudinary.config().api_key || '';
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME || cloudinary.config().cloud_name || '';
+    const apiKey = cloudinary.config().api_key || '';
+    const cloudName = cloudinary.config().cloud_name || '';
+    
+    if (!apiKey || !cloudName) {
+      throw new Error('Cloudinary API key and cloud name must be configured');
+    }
     
     // Return upload URL with parameters
     const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload?timestamp=${timestamp}&signature=${signature}&api_key=${apiKey}&folder=${encodeURIComponent(`${privateFolder}/contracts`)}&public_id=${objectId}`;
@@ -142,6 +180,8 @@ export class ObjectStorageService {
   }
 
   async getObjectEntityFile(objectPath: string): Promise<string> {
+    this.ensureCloudinaryConfigured();
+    
     if (!objectPath.startsWith("/contracts/")) {
       throw new ObjectNotFoundError();
     }
@@ -215,6 +255,8 @@ export class ObjectStorageService {
     resource_type?: 'image' | 'video' | 'raw' | 'auto';
     public_id?: string;
   }): Promise<UploadApiResponse> {
+    this.ensureCloudinaryConfigured();
+    
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
