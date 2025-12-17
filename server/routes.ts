@@ -482,8 +482,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const contractPath = req.params.contractPath;
       const objectStorageService = new ObjectStorageService();
-      const objectFile = await objectStorageService.getObjectEntityFile(`/contracts/${contractPath}`);
-      await objectStorageService.downloadObject(objectFile, res);
+      const fileUrl = await objectStorageService.getObjectEntityFile(`/contracts/${contractPath}`);
+      await objectStorageService.downloadObject(fileUrl, res);
     } catch (error) {
       console.error("Error downloading contract:", error);
       if (error instanceof ObjectNotFoundError) {

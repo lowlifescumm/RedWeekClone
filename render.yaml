@@ -14,16 +14,21 @@ services:
       # Database configuration
       - key: DATABASE_URL
         sync: false  # Set this in Render dashboard with your MongoDB connection string
-      # Google Cloud Storage configuration
-      - key: OBJECT_STORAGE_BUCKET
-        sync: false  # Set this in Render dashboard with your GCS bucket name
-      - key: GCS_PROJECT_ID
-        sync: false  # Set this in Render dashboard with your GCS project ID
-      - key: GCS_CREDENTIALS
-        sync: false  # Set this in Render dashboard with your GCS service account JSON (as string)
+      # Cloudinary configuration
+      - key: CLOUDINARY_URL
+        value: cloudinary://274492371818329:P4REsNktLJluLd2hpJr2gZ10iO4@dcpjvl1ct
+        sync: false  # Keep this secure - set in Render dashboard
+      # Optional: Cloudinary individual credentials (alternative to CLOUDINARY_URL)
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dcpjvl1ct
+      - key: CLOUDINARY_API_KEY
+        value: 274492371818329
+      - key: CLOUDINARY_API_SECRET
+        value: P4REsNktLJluLd2hpJr2gZ10iO4
+        sync: false  # Keep this secure - set in Render dashboard
       # Optional: Object storage paths
       - key: PUBLIC_OBJECT_SEARCH_PATHS
         value: public
       - key: PRIVATE_OBJECT_DIR
-        value: .private
+        value: private
 
