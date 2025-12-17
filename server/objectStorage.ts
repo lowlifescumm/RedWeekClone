@@ -1,49 +1,26 @@
-import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
+import { Storage, File } from "@google-cloud/storage";
 import { Response } from "express";
 import { randomUUID } from "crypto";
 
-// Initialize Cloudinary with proper fallback handling
-// Parse CLOUDINARY_URL if provided (format: cloudinary://api_key:api_secret@cloud_name)
-let cloudinaryConfigured = false;
+const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 
-if (process.env.CLOUDINARY_URL) {
-  const urlMatch = process.env.CLOUDINARY_URL.match(/cloudinary:\/\/([^:]+):([^@]+)@([^\/]+)/);
-  if (urlMatch && urlMatch[1] && urlMatch[2] && urlMatch[3]) {
-    // Successfully parsed CLOUDINARY_URL
-    cloudinary.config({
-      cloud_name: urlMatch[3],
-      api_key: urlMatch[1],
-      api_secret: urlMatch[2],
-    });
-    cloudinaryConfigured = true;
-  } else {
-    // CLOUDINARY_URL exists but is malformed - log warning and fall through to individual vars
-    console.warn(
-      "CLOUDINARY_URL is set but malformed. Falling back to individual environment variables."
-    );
-  }
-}
-
-// Fallback to individual environment variables if CLOUDINARY_URL wasn't used or was malformed
-if (!cloudinaryConfigured) {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-  if (cloudName && apiKey && apiSecret) {
-    cloudinary.config({
-      cloud_name: cloudName,
-      api_key: apiKey,
-      api_secret: apiSecret,
-    });
-    cloudinaryConfigured = true;
-  } else {
-    // Warn if neither method worked, but don't throw (allows for lazy initialization)
-    console.warn(
-      "Cloudinary not configured. Set CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET"
-    );
-  }
-}
+export const objectStorageClient = new Storage({
+  credentials: {
+    audience: "replit",
+    subject_token_type: "access_token",
+    token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
+    type: "external_account",
+    credential_source: {
+      url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
+      format: {
+        type: "json",
+        subject_token_field_name: "access_token",
+      },
+    },
+    universe_domain: "googleapis.com",
+  },
+  projectId: "",
+});
 
 export class ObjectNotFoundError extends Error {
   constructor() {
@@ -61,6 +38,14 @@ export class ObjectStorageService {
     // Use environment variables for folder paths, with defaults
     this.publicFolder = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split(',')[0] || 'public';
     this.privateFolder = process.env.PRIVATE_OBJECT_DIR || 'private';
+  }
+
+  private ensureCloudinaryConfigured(): void {
+    if (!cloudinaryConfigured) {
+      throw new Error(
+        "Cloudinary is not configured. Please set CLOUDINARY_URL or individual credentials (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)"
+      );
+    }
   }
 
   getPublicObjectSearchPaths(): Array<string> {
@@ -91,19 +76,10 @@ export class ObjectStorageService {
     return dir;
   }
 
-  private ensureCloudinaryConfigured(): void {
-    if (!cloudinaryConfigured) {
-      throw new Error(
-        "Cloudinary is not configured. Please set CLOUDINARY_URL or individual credentials (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)"
-      );
-    }
-  }
-
   async searchPublicObject(filePath: string): Promise<string | null> {
     this.ensureCloudinaryConfigured();
     
     // Cloudinary doesn't have a direct "search" - we'll try to get the resource
-    // For public files, we can construct the URL directly
     for (const searchPath of this.getPublicObjectSearchPaths()) {
       const cleanSearchPath = searchPath.replace(/^\/+/, '');
       const cleanFilePath = filePath.replace(/^\/+/, '');
@@ -127,7 +103,6 @@ export class ObjectStorageService {
   async downloadObject(fileUrl: string, res: Response, cacheTtlSec: number = 3600) {
     try {
       // For Cloudinary, we redirect to the secure URL
-      // Or we can proxy the file if needed
       res.set({
         "Cache-Control": `public, max-age=${cacheTtlSec}`,
       });
