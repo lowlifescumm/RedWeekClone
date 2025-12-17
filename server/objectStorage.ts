@@ -3,14 +3,8 @@ import { Response } from "express";
 import { randomUUID } from "crypto";
 
 // Initialize Cloudinary with environment variables
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_URL?.match(/cloudinary:\/\/[^:]+:[^@]+@([^\/]+)/)?.[1],
-  api_key: process.env.CLOUDINARY_API_KEY || process.env.CLOUDINARY_URL?.match(/cloudinary:\/\/[^:]+:([^@]+)@/)?.[1],
-  api_secret: process.env.CLOUDINARY_API_SECRET || process.env.CLOUDINARY_URL?.match(/cloudinary:\/\/[^:]+:([^@]+)@/)?.[1],
-});
-
 // Parse CLOUDINARY_URL if provided (format: cloudinary://api_key:api_secret@cloud_name)
-if (process.env.CLOUDINARY_URL && !process.env.CLOUDINARY_CLOUD_NAME) {
+if (process.env.CLOUDINARY_URL) {
   const urlMatch = process.env.CLOUDINARY_URL.match(/cloudinary:\/\/([^:]+):([^@]+)@([^\/]+)/);
   if (urlMatch) {
     cloudinary.config({
@@ -19,6 +13,13 @@ if (process.env.CLOUDINARY_URL && !process.env.CLOUDINARY_CLOUD_NAME) {
       api_secret: urlMatch[2],
     });
   }
+} else {
+  // Use individual environment variables
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || '',
+    api_key: process.env.CLOUDINARY_API_KEY || '',
+    api_secret: process.env.CLOUDINARY_API_SECRET || '',
+  });
 }
 
 export class ObjectNotFoundError extends Error {
