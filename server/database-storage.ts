@@ -22,7 +22,21 @@ export class DatabaseStorage implements IStorage {
   // User methods
   async getUser(id: string): Promise<User | undefined> {
     const db = await getDb();
-    const user = await db.collection<User>('users').findOne({ _id: new ObjectId(id) });
+    // Try ObjectId first, then fall back to string _id or id field
+    let user = null;
+    try {
+      user = await db.collection('users').findOne({ _id: new ObjectId(id) });
+    } catch (error) {
+      // Not a valid ObjectId, try as string
+    }
+    if (!user) {
+      user = await db.collection('users').findOne({ 
+        $or: [
+          { _id: id },
+          { id: id }
+        ]
+      });
+    }
     if (!user) return undefined;
     return this.mapUserFromDb(user);
   }
