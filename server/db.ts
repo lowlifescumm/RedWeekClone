@@ -1,6 +1,6 @@
 import { MongoClient, Db, MongoClientOptions } from 'mongodb';
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || 'mongodb+srv://ethanfitzhenry_db_user:6BuZiIKo4AtvRZlO@cluster0.cq9y4vu.mongodb.net/?appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || 'mongodb+srv://ethanfitzhenry_db_user:bDDTtKUKfXNTN7qZ@cluster0.cq9y4vu.mongodb.net/?appName=Cluster0';
 
 if (!MONGODB_URI) {
   throw new Error(

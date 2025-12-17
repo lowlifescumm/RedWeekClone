@@ -4,7 +4,7 @@ import { join } from 'path';
 
 // Get connection string from environment or use default
 // Note: Make sure MongoDB Atlas Network Access allows your IP address
-const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || 'mongodb+srv://ethanfitzhenry_db_user:6BuZiIKo4AtvRZlO@cluster0.cq9y4vu.mongodb.net/redweek_clone?retryWrites=true&w=majority&appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || 'mongodb+srv://ethanfitzhenry_db_user:bDDTtKUKfXNTN7qZ@cluster0.cq9y4vu.mongodb.net/redweek_clone?retryWrites=true&w=majority&appName=Cluster0';
 
 if (!MONGODB_URI) {
   console.error('MONGODB_URI or DATABASE_URL must be set');
