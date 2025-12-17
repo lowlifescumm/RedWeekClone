@@ -665,8 +665,12 @@ export class DatabaseStorage implements IStorage {
 
   // Helper methods to map MongoDB documents to our types
   private mapUserFromDb(doc: any): User {
+    // Handle both ObjectId and string _id values
+    // Also check for id field as fallback (for imported data)
+    const id = doc._id ? (typeof doc._id === 'string' ? doc._id : doc._id.toString()) : (doc.id || '');
+    
     return {
-      id: doc._id.toString(),
+      id,
       username: doc.username,
       email: doc.email,
       password: doc.password,
