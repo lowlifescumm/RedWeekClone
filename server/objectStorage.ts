@@ -1,26 +1,49 @@
-import { Storage, File } from "@google-cloud/storage";
+import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
 import { Response } from "express";
 import { randomUUID } from "crypto";
 
-const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
+// Initialize Cloudinary with environment variables
+// Parse CLOUDINARY_URL if provided (format: cloudinary://api_key:api_secret@cloud_name)
+let cloudinaryConfigured = false;
 
-export const objectStorageClient = new Storage({
-  credentials: {
-    audience: "replit",
-    subject_token_type: "access_token",
-    token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
-    type: "external_account",
-    credential_source: {
-      url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
-      format: {
-        type: "json",
-        subject_token_field_name: "access_token",
-      },
-    },
-    universe_domain: "googleapis.com",
-  },
-  projectId: "",
-});
+if (process.env.CLOUDINARY_URL) {
+  const urlMatch = process.env.CLOUDINARY_URL.match(/cloudinary:\/\/([^:]+):([^@]+)@([^\/]+)/);
+  if (urlMatch) {
+    cloudinary.config({
+      cloud_name: urlMatch[3],
+      api_key: urlMatch[1],
+      api_secret: urlMatch[2],
+    });
+    cloudinaryConfigured = true;
+  } else {
+    // CLOUDINARY_URL exists but is malformed - log warning and fall through to individual vars
+    console.warn(
+      "CLOUDINARY_URL is set but malformed. Falling back to individual environment variables."
+    );
+  }
+}
+
+// Use individual environment variables if CLOUDINARY_URL wasn't set or failed to parse
+if (!cloudinaryConfigured) {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  if (cloudName && apiKey && apiSecret) {
+    cloudinary.config({
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
+    });
+    cloudinaryConfigured = true;
+  } else if (process.env.CLOUDINARY_URL) {
+    // CLOUDINARY_URL was set but malformed, and individual vars are missing
+    throw new Error(
+      "CLOUDINARY_URL is malformed and individual credentials (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) are not set. " +
+      "Please fix CLOUDINARY_URL format (cloudinary://api_key:api_secret@cloud_name) or set individual credentials."
+    );
+  }
+}
 
 export class ObjectNotFoundError extends Error {
   constructor() {
@@ -35,17 +58,15 @@ export class ObjectStorageService {
   private privateFolder: string;
 
   constructor() {
-    // Use environment variables for folder paths, with defaults
-    this.publicFolder = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split(',')[0] || 'public';
-    this.privateFolder = process.env.PRIVATE_OBJECT_DIR || 'private';
-  }
-
-  private ensureCloudinaryConfigured(): void {
     if (!cloudinaryConfigured) {
       throw new Error(
         "Cloudinary is not configured. Please set CLOUDINARY_URL or individual credentials (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)"
       );
     }
+    
+    // Use environment variables for folder paths, with defaults
+    this.publicFolder = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split(',')[0] || 'public';
+    this.privateFolder = process.env.PRIVATE_OBJECT_DIR || 'private';
   }
 
   getPublicObjectSearchPaths(): Array<string> {
@@ -77,9 +98,8 @@ export class ObjectStorageService {
   }
 
   async searchPublicObject(filePath: string): Promise<string | null> {
-    this.ensureCloudinaryConfigured();
-    
     // Cloudinary doesn't have a direct "search" - we'll try to get the resource
+    // For public files, we can construct the URL directly
     for (const searchPath of this.getPublicObjectSearchPaths()) {
       const cleanSearchPath = searchPath.replace(/^\/+/, '');
       const cleanFilePath = filePath.replace(/^\/+/, '');
@@ -103,6 +123,7 @@ export class ObjectStorageService {
   async downloadObject(fileUrl: string, res: Response, cacheTtlSec: number = 3600) {
     try {
       // For Cloudinary, we redirect to the secure URL
+      // Or we can proxy the file if needed
       res.set({
         "Cache-Control": `public, max-age=${cacheTtlSec}`,
       });
@@ -118,12 +139,11 @@ export class ObjectStorageService {
   }
 
   async getObjectEntityUploadURL(): Promise<string> {
-    this.ensureCloudinaryConfigured();
-    
     const privateFolder = this.getPrivateObjectDir();
     const objectId = randomUUID();
     
     // Generate upload signature for Cloudinary
+    // Cloudinary uses upload presets or signed uploads
     const timestamp = Math.round(new Date().getTime() / 1000);
     const apiSecret = cloudinary.config().api_secret;
     
@@ -155,8 +175,6 @@ export class ObjectStorageService {
   }
 
   async getObjectEntityFile(objectPath: string): Promise<string> {
-    this.ensureCloudinaryConfigured();
-    
     if (!objectPath.startsWith("/contracts/")) {
       throw new ObjectNotFoundError();
     }
@@ -230,8 +248,6 @@ export class ObjectStorageService {
     resource_type?: 'image' | 'video' | 'raw' | 'auto';
     public_id?: string;
   }): Promise<UploadApiResponse> {
-    this.ensureCloudinaryConfigured();
-    
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
