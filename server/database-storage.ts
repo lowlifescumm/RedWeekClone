@@ -1,13 +1,6 @@
-import { eq, ilike, desc, sql } from "drizzle-orm";
-import { db } from "./db";
+import { ObjectId } from 'mongodb';
+import { getDb } from "./db";
 import { 
-  users, 
-  resorts, 
-  reviews, 
-  bookings, 
-  listings,
-  siteSettings,
-  propertyInquiries,
   type User,
   type InsertUser,
   type Resort,
@@ -28,305 +21,428 @@ import { IStorage } from "./storage";
 export class DatabaseStorage implements IStorage {
   // User methods
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    const db = await getDb();
+    const user = await db.collection<User>('users').findOne({ _id: new ObjectId(id) });
+    if (!user) return undefined;
+    return this.mapUserFromDb(user);
   }
 
   async getUsers(): Promise<User[]> {
-    return await db.select().from(users);
+    const db = await getDb();
+    const users = await db.collection('users').find({}).toArray();
+    return users.map(u => this.mapUserFromDb(u as any));
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username.toLowerCase()));
-    return user || undefined;
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ username: username.toLowerCase() });
+    if (!user) return undefined;
+    return this.mapUserFromDb(user as any);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
-    return user || undefined;
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ email: email.toLowerCase() });
+    if (!user) return undefined;
+    return this.mapUserFromDb(user as any);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    const db = await getDb();
     const userData = {
       ...insertUser,
       email: insertUser.email.toLowerCase().trim(),
       username: insertUser.username.toLowerCase().trim(),
       role: insertUser.role || 'user',
+      createdAt: new Date(),
     };
 
-    const [user] = await db.insert(users).values(userData).returning();
-    return user;
+    const result = await db.collection('users').insertOne(userData);
+    return {
+      ...userData,
+      id: result.insertedId.toString(),
+    };
   }
 
   async updateUser(id: string, updateData: Partial<Omit<User, 'id' | 'createdAt' | 'password'>>): Promise<User | undefined> {
-    const [updatedUser] = await db
-      .update(users)
-      .set({
-        ...updateData,
-        email: updateData.email ? updateData.email.toLowerCase().trim() : undefined,
-        username: updateData.username ? updateData.username.toLowerCase().trim() : undefined,
-      })
-      .where(eq(users.id, id))
-      .returning();
+    const db = await getDb();
+    const update: any = { ...updateData };
     
-    return updatedUser || undefined;
+    if (updateData.email) {
+      update.email = updateData.email.toLowerCase().trim();
+    }
+    if (updateData.username) {
+      update.username = updateData.username.toLowerCase().trim();
+    }
+
+    const result = await db.collection('users').findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: update },
+      { returnDocument: 'after' }
+    );
+
+    if (!result) return undefined;
+    return this.mapUserFromDb(result as any);
   }
 
   async deleteUser(id: string): Promise<boolean> {
-    const result = await db.delete(users).where(eq(users.id, id));
-    return (result.rowCount || 0) > 0;
+    const db = await getDb();
+    const result = await db.collection('users').deleteOne({ _id: new ObjectId(id) });
+    return result.deletedCount > 0;
   }
 
   // Resort methods
   async getResorts(): Promise<Resort[]> {
-    return await db.select().from(resorts).orderBy(desc(resorts.createdAt));
+    const db = await getDb();
+    const resorts = await db.collection('resorts').find({}).sort({ createdAt: -1 }).toArray();
+    return resorts.map(r => this.mapResortFromDb(r as any));
   }
 
   async getResort(id: string): Promise<Resort | undefined> {
-    const [resort] = await db.select().from(resorts).where(eq(resorts.id, id));
-    return resort || undefined;
+    const db = await getDb();
+    const resort = await db.collection('resorts').findOne({ _id: new ObjectId(id) });
+    if (!resort) return undefined;
+    return this.mapResortFromDb(resort as any);
   }
 
   async getResortsByDestination(destination: string): Promise<Resort[]> {
-    return await db
-      .select()
-      .from(resorts)
-      .where(ilike(resorts.destination, `%${destination}%`))
-      .orderBy(desc(resorts.rating));
+    const db = await getDb();
+    const resorts = await db.collection('resorts').find({
+      destination: { $regex: destination, $options: 'i' }
+    }).sort({ rating: -1 }).toArray();
+    return resorts.map(r => this.mapResortFromDb(r as any));
   }
 
   async getNewAvailabilityResorts(): Promise<Resort[]> {
-    return await db
-      .select()
-      .from(resorts)
-      .where(eq(resorts.isNewAvailability, true))
-      .orderBy(desc(resorts.createdAt));
+    const db = await getDb();
+    const resorts = await db.collection('resorts').find({
+      isNewAvailability: true
+    }).sort({ createdAt: -1 }).toArray();
+    return resorts.map(r => this.mapResortFromDb(r as any));
   }
 
   async getTopResorts(): Promise<Resort[]> {
-    return await db
-      .select()
-      .from(resorts)
-      .orderBy(desc(resorts.rating))
-      .limit(12);
+    const db = await getDb();
+    const resorts = await db.collection('resorts').find({})
+      .sort({ rating: -1 })
+      .limit(12)
+      .toArray();
+    return resorts.map(r => this.mapResortFromDb(r as any));
   }
 
   async searchResorts(query: string): Promise<Resort[]> {
-    const searchTerm = `%${query}%`;
-    return await db
-      .select()
-      .from(resorts)
-      .where(
-        sql`${resorts.name} ILIKE ${searchTerm} OR 
-            ${resorts.location} ILIKE ${searchTerm} OR 
-            ${resorts.destination} ILIKE ${searchTerm}`
-      )
-      .orderBy(desc(resorts.rating));
+    const db = await getDb();
+    const searchRegex = { $regex: query, $options: 'i' };
+    const resorts = await db.collection('resorts').find({
+      $or: [
+        { name: searchRegex },
+        { location: searchRegex },
+        { destination: searchRegex }
+      ]
+    }).sort({ rating: -1 }).toArray();
+    return resorts.map(r => this.mapResortFromDb(r as any));
   }
 
   async createResort(insertResort: InsertResort): Promise<Resort> {
+    const db = await getDb();
     const resortData = {
       ...insertResort,
       reviewCount: 0,
       availableRentals: insertResort.availableRentals || 0,
       isNewAvailability: insertResort.isNewAvailability || false,
+      createdAt: new Date(),
     };
 
-    const [resort] = await db.insert(resorts).values(resortData).returning();
-    return resort;
+    const result = await db.collection('resorts').insertOne(resortData);
+    return {
+      ...resortData,
+      id: result.insertedId.toString(),
+    };
   }
 
   async createResortsInBulk(insertResorts: InsertResort[]): Promise<Resort[]> {
+    const db = await getDb();
     const resortsData = insertResorts.map(insertResort => ({
       ...insertResort,
       reviewCount: 0,
       availableRentals: insertResort.availableRentals || 0,
       isNewAvailability: insertResort.isNewAvailability || false,
+      createdAt: new Date(),
     }));
 
-    return await db.insert(resorts).values(resortsData).returning();
+    const result = await db.collection('resorts').insertMany(resortsData);
+    const insertedIds = Object.values(result.insertedIds);
+    
+    return resortsData.map((resort, index) => ({
+      ...resort,
+      id: insertedIds[index].toString(),
+    }));
   }
 
   async updateResort(id: string, updateData: Partial<Omit<Resort, 'id'>>): Promise<Resort | undefined> {
-    const [updatedResort] = await db
-      .update(resorts)
-      .set(updateData)
-      .where(eq(resorts.id, id))
-      .returning();
-    
-    return updatedResort || undefined;
+    const db = await getDb();
+    const result = await db.collection('resorts').findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    );
+
+    if (!result) return undefined;
+    return this.mapResortFromDb(result as any);
   }
 
   async deleteResort(id: string): Promise<boolean> {
-    const result = await db.delete(resorts).where(eq(resorts.id, id));
-    return (result.rowCount || 0) > 0;
+    const db = await getDb();
+    const result = await db.collection('resorts').deleteOne({ _id: new ObjectId(id) });
+    return result.deletedCount > 0;
   }
 
   // Review methods
   async getReviewsByResort(resortId: string): Promise<Review[]> {
-    return await db
-      .select()
-      .from(reviews)
-      .where(eq(reviews.resortId, resortId))
-      .orderBy(desc(reviews.createdAt));
+    const db = await getDb();
+    // Reviews store resortId as string, so we can query directly
+    // But we also need to handle cases where it might be stored as ObjectId
+    let query: any = { resortId: resortId };
+    
+    // Try to add ObjectId query if resortId is a valid ObjectId string
+    try {
+      const objectId = new ObjectId(resortId);
+      query = {
+        $or: [
+          { resortId: resortId },
+          { resortId: objectId }
+        ]
+      };
+    } catch {
+      // Not a valid ObjectId, just use string query
+      query = { resortId: resortId };
+    }
+    
+    const reviews = await db.collection('reviews').find(query).sort({ createdAt: -1 }).toArray();
+    return reviews.map(r => this.mapReviewFromDb(r as any));
   }
 
   async createReview(insertReview: InsertReview): Promise<Review> {
-    const [review] = await db.insert(reviews).values(insertReview).returning();
-    
-    // Update resort review count
-    await db
-      .update(resorts)
-      .set({ 
-        reviewCount: sql`${resorts.reviewCount} + 1`
-      })
-      .where(eq(resorts.id, insertReview.resortId));
+    const db = await getDb();
+    const reviewData = {
+      ...insertReview,
+      createdAt: new Date(),
+    };
 
-    return review;
+    const result = await db.collection('reviews').insertOne(reviewData);
+    
+    // Update resort review count - try ObjectId first, then string
+    let resortQuery: any;
+    try {
+      // Try as ObjectId if it's a valid ObjectId string
+      resortQuery = { _id: new ObjectId(insertReview.resortId) };
+    } catch {
+      // If not a valid ObjectId, find the resort by its string ID field
+      const resort = await db.collection('resorts').findOne({ 
+        $or: [
+          { _id: insertReview.resortId as any },
+          { id: insertReview.resortId }
+        ]
+      });
+      if (resort) {
+        resortQuery = { _id: resort._id };
+      } else {
+        // If still not found, use the string directly (might be a custom ID)
+        resortQuery = { _id: insertReview.resortId as any };
+      }
+    }
+    
+    await db.collection('resorts').updateOne(
+      resortQuery,
+      { $inc: { reviewCount: 1 } }
+    );
+
+    return {
+      ...reviewData,
+      id: result.insertedId.toString(),
+    };
   }
 
   // Booking methods
   async getBookingsByUser(userId: string): Promise<Booking[]> {
-    return await db
-      .select()
-      .from(bookings)
-      .where(eq(bookings.userId, userId))
-      .orderBy(desc(bookings.createdAt));
+    const db = await getDb();
+    const bookings = await db.collection('bookings').find({
+      userId: userId
+    }).sort({ createdAt: -1 }).toArray();
+    return bookings.map(b => this.mapBookingFromDb(b as any));
   }
 
   async createBooking(insertBooking: InsertBooking): Promise<Booking> {
+    const db = await getDb();
     const bookingData = {
       ...insertBooking,
       status: "pending",
+      createdAt: new Date(),
     };
 
-    const [booking] = await db.insert(bookings).values(bookingData).returning();
-    return booking;
+    const result = await db.collection('bookings').insertOne(bookingData);
+    return {
+      ...bookingData,
+      id: result.insertedId.toString(),
+    };
   }
 
   // Listing methods
   async getListingsByOwner(ownerId: string): Promise<Listing[]> {
-    return await db
-      .select()
-      .from(listings)
-      .where(eq(listings.ownerId, ownerId))
-      .orderBy(desc(listings.createdAt));
+    const db = await getDb();
+    const listings = await db.collection('listings').find({
+      ownerId: ownerId
+    }).sort({ createdAt: -1 }).toArray();
+    return listings.map(l => this.mapListingFromDb(l as any));
   }
 
   async getListing(id: string): Promise<Listing | undefined> {
-    const [listing] = await db.select().from(listings).where(eq(listings.id, id));
-    return listing || undefined;
+    const db = await getDb();
+    const listing = await db.collection('listings').findOne({ _id: new ObjectId(id) });
+    if (!listing) return undefined;
+    return this.mapListingFromDb(listing as any);
   }
 
   async createListing(insertListing: InsertListing): Promise<Listing> {
+    const db = await getDb();
     const listingData = {
       ...insertListing,
       isActive: true,
       contractVerificationStatus: "pending",
       escrowStatus: "none",
       ownershipVerified: false,
+      escrowAccountId: null,
+      createdAt: new Date(),
     };
 
-    const [listing] = await db.insert(listings).values(listingData).returning();
-    return listing;
+    const result = await db.collection('listings').insertOne(listingData);
+    return {
+      ...listingData,
+      id: result.insertedId.toString(),
+      escrowAccountId: null,
+    };
   }
 
   async updateListing(id: string, updateData: Partial<Omit<Listing, 'id' | 'createdAt'>>): Promise<Listing | undefined> {
-    const [updatedListing] = await db
-      .update(listings)
-      .set(updateData)
-      .where(eq(listings.id, id))
-      .returning();
-    
-    return updatedListing || undefined;
+    const db = await getDb();
+    const result = await db.collection('listings').findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    );
+
+    if (!result) return undefined;
+    return this.mapListingFromDb(result as any);
   }
 
   // Site Settings methods
   async getSiteSetting(key: string): Promise<SiteSetting | undefined> {
-    const [setting] = await db.select().from(siteSettings).where(eq(siteSettings.key, key));
-    return setting || undefined;
+    const db = await getDb();
+    const setting = await db.collection('siteSettings').findOne({ key });
+    if (!setting) return undefined;
+    return this.mapSiteSettingFromDb(setting as any);
   }
 
   async getSiteSettingsByCategory(category: string): Promise<SiteSetting[]> {
-    return await db
-      .select()
-      .from(siteSettings)
-      .where(eq(siteSettings.category, category))
-      .orderBy(siteSettings.key);
+    const db = await getDb();
+    const settings = await db.collection('siteSettings').find({
+      category
+    }).sort({ key: 1 }).toArray();
+    return settings.map(s => this.mapSiteSettingFromDb(s as any));
   }
 
   async getAllSiteSettings(): Promise<SiteSetting[]> {
-    return await db
-      .select()
-      .from(siteSettings)
-      .orderBy(siteSettings.category, siteSettings.key);
+    const db = await getDb();
+    const settings = await db.collection('siteSettings').find({})
+      .sort({ category: 1, key: 1 })
+      .toArray();
+    return settings.map(s => this.mapSiteSettingFromDb(s as any));
   }
 
   async setSiteSetting(insertSetting: InsertSiteSetting): Promise<SiteSetting> {
-    const [setting] = await db
-      .insert(siteSettings)
-      .values({
-        ...insertSetting,
-        updatedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: siteSettings.key,
-        set: {
+    const db = await getDb();
+    const settingData = {
+      ...insertSetting,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const result = await db.collection('siteSettings').findOneAndUpdate(
+      { key: insertSetting.key },
+      {
+        $set: {
           value: insertSetting.value,
           category: insertSetting.category,
           description: insertSetting.description,
           isEncrypted: insertSetting.isEncrypted,
           updatedAt: new Date(),
         },
-      })
-      .returning();
-    
-    return setting;
+        $setOnInsert: {
+          createdAt: new Date(),
+        }
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    return this.mapSiteSettingFromDb(result as any);
   }
 
   async deleteSiteSetting(key: string): Promise<boolean> {
-    const result = await db.delete(siteSettings).where(eq(siteSettings.key, key));
-    return (result.rowCount || 0) > 0;
+    const db = await getDb();
+    const result = await db.collection('siteSettings').deleteOne({ key });
+    return result.deletedCount > 0;
   }
 
   // Property Inquiry methods
   async getPropertyInquiries(): Promise<PropertyInquiry[]> {
-    return await db
-      .select()
-      .from(propertyInquiries)
-      .orderBy(desc(propertyInquiries.createdAt));
+    const db = await getDb();
+    const inquiries = await db.collection('propertyInquiries').find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+    return inquiries.map(i => this.mapPropertyInquiryFromDb(i as any));
   }
 
   async getPropertyInquiry(id: string): Promise<PropertyInquiry | undefined> {
-    const [inquiry] = await db.select().from(propertyInquiries).where(eq(propertyInquiries.id, id));
-    return inquiry || undefined;
+    const db = await getDb();
+    const inquiry = await db.collection('propertyInquiries').findOne({ _id: new ObjectId(id) });
+    if (!inquiry) return undefined;
+    return this.mapPropertyInquiryFromDb(inquiry as any);
   }
 
   async createPropertyInquiry(insertInquiry: InsertPropertyInquiry): Promise<PropertyInquiry> {
+    const db = await getDb();
     const inquiryData = {
       ...insertInquiry,
       status: "new",
+      createdAt: new Date(),
     };
 
-    const [inquiry] = await db.insert(propertyInquiries).values(inquiryData).returning();
-    return inquiry;
+    const result = await db.collection('propertyInquiries').insertOne(inquiryData);
+    return {
+      ...inquiryData,
+      id: result.insertedId.toString(),
+    };
   }
 
   async updatePropertyInquiry(id: string, updateData: Partial<Omit<PropertyInquiry, 'id' | 'createdAt'>>): Promise<PropertyInquiry | undefined> {
-    const [updatedInquiry] = await db
-      .update(propertyInquiries)
-      .set(updateData)
-      .where(eq(propertyInquiries.id, id))
-      .returning();
-    
-    return updatedInquiry || undefined;
+    const db = await getDb();
+    const result = await db.collection('propertyInquiries').findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    );
+
+    if (!result) return undefined;
+    return this.mapPropertyInquiryFromDb(result as any);
   }
 
   // Seed data for initial setup
   async seedData(): Promise<void> {
+    const db = await getDb();
+    
     // Check if data already exists
-    const existingResorts = await this.getResorts();
-    if (existingResorts.length > 0) {
+    const existingResorts = await db.collection('resorts').countDocuments();
+    if (existingResorts > 0) {
       console.log("Database already seeded, skipping seed data");
       return;
     }
@@ -480,12 +596,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async seedSiteSettings(): Promise<void> {
-    // Check if SMTP settings already exist
-    const existingSmtpSettings = await db.select()
-      .from(siteSettings)
-      .where(eq(siteSettings.category, 'smtp'));
+    const db = await getDb();
     
-    if (existingSmtpSettings.length > 0) {
+    // Check if SMTP settings already exist
+    const existingSmtpSettings = await db.collection('siteSettings').countDocuments({
+      category: 'smtp'
+    });
+    
+    if (existingSmtpSettings > 0) {
       console.log("SMTP settings already exist, skipping site settings seed");
       return;
     }
@@ -537,7 +655,125 @@ export class DatabaseStorage implements IStorage {
       }
     ];
 
-    await db.insert(siteSettings).values(smtpSettings);
+    await db.collection('siteSettings').insertMany(smtpSettings.map(s => ({
+      ...s,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })));
     console.log(`Seeded ${smtpSettings.length} SMTP settings`);
+  }
+
+  // Helper methods to map MongoDB documents to our types
+  private mapUserFromDb(doc: any): User {
+    return {
+      id: doc._id.toString(),
+      username: doc.username,
+      email: doc.email,
+      password: doc.password,
+      firstName: doc.firstName,
+      lastName: doc.lastName,
+      role: doc.role,
+      createdAt: doc.createdAt,
+    };
+  }
+
+  private mapResortFromDb(doc: any): Resort {
+    return {
+      id: doc._id.toString(),
+      name: doc.name,
+      location: doc.location,
+      description: doc.description,
+      imageUrl: doc.imageUrl,
+      amenities: doc.amenities,
+      rating: doc.rating,
+      reviewCount: doc.reviewCount || 0,
+      availableRentals: doc.availableRentals,
+      priceMin: doc.priceMin,
+      priceMax: doc.priceMax,
+      isNewAvailability: doc.isNewAvailability,
+      destination: doc.destination,
+      createdAt: doc.createdAt,
+    };
+  }
+
+  private mapReviewFromDb(doc: any): Review {
+    return {
+      id: doc._id.toString(),
+      resortId: doc.resortId,
+      userId: doc.userId,
+      rating: doc.rating,
+      title: doc.title,
+      content: doc.content,
+      createdAt: doc.createdAt,
+    };
+  }
+
+  private mapBookingFromDb(doc: any): Booking {
+    return {
+      id: doc._id.toString(),
+      resortId: doc.resortId,
+      userId: doc.userId,
+      checkIn: doc.checkIn,
+      checkOut: doc.checkOut,
+      guests: doc.guests,
+      totalPrice: doc.totalPrice,
+      status: doc.status,
+      createdAt: doc.createdAt,
+    };
+  }
+
+  private mapListingFromDb(doc: any): Listing {
+    return {
+      id: doc._id.toString(),
+      resortId: doc.resortId,
+      ownerId: doc.ownerId,
+      title: doc.title,
+      description: doc.description,
+      pricePerNight: doc.pricePerNight,
+      availableFrom: doc.availableFrom,
+      availableTo: doc.availableTo,
+      maxGuests: doc.maxGuests,
+      isActive: doc.isActive,
+      contractDocumentUrl: doc.contractDocumentUrl ?? undefined,
+      contractVerificationStatus: doc.contractVerificationStatus,
+      escrowStatus: doc.escrowStatus,
+      ownershipVerified: doc.ownershipVerified,
+      escrowAccountId: doc.escrowAccountId || null,
+      salePrice: doc.salePrice,
+      isForSale: doc.isForSale,
+      createdAt: doc.createdAt,
+    };
+  }
+
+  private mapSiteSettingFromDb(doc: any): SiteSetting {
+    return {
+      id: doc._id.toString(),
+      key: doc.key,
+      value: doc.value,
+      category: doc.category,
+      description: doc.description,
+      isEncrypted: doc.isEncrypted,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    };
+  }
+
+  private mapPropertyInquiryFromDb(doc: any): PropertyInquiry {
+    return {
+      id: doc._id.toString(),
+      firstName: doc.firstName,
+      lastName: doc.lastName,
+      email: doc.email,
+      phone: doc.phone,
+      propertyName: doc.propertyName,
+      location: doc.location,
+      ownershipType: doc.ownershipType,
+      weekNumbers: doc.weekNumbers,
+      askingPrice: doc.askingPrice,
+      motivation: doc.motivation,
+      additionalInfo: doc.additionalInfo,
+      status: doc.status,
+      createdAt: doc.createdAt,
+    };
   }
 }

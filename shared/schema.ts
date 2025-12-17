@@ -1,161 +1,142 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, decimal, boolean } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  role: text("role").notNull().default("user"),
-  createdAt: timestamp("created_at").defaultNow()
+// User Schema
+export const insertUserSchema = z.object({
+  username: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(1),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  role: z.string().default("user"),
 });
 
-export const resorts = pgTable("resorts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  location: text("location").notNull(),
-  description: text("description").notNull(),
-  imageUrl: text("image_url").notNull(),
-  amenities: text("amenities").array().notNull(),
-  rating: decimal("rating", { precision: 3, scale: 2 }).notNull(),
-  reviewCount: integer("review_count").notNull().default(0),
-  availableRentals: integer("available_rentals").notNull().default(0),
-  priceMin: integer("price_min").notNull(),
-  priceMax: integer("price_max").notNull(),
-  isNewAvailability: boolean("is_new_availability").notNull().default(false),
-  destination: text("destination").notNull(),
-  createdAt: timestamp("created_at").defaultNow()
-});
-
-export const reviews = pgTable("reviews", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  resortId: varchar("resort_id").notNull().references(() => resorts.id),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  rating: integer("rating").notNull(),
-  title: text("title").notNull(),
-  content: text("content").notNull(),
-  createdAt: timestamp("created_at").defaultNow()
-});
-
-export const bookings = pgTable("bookings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  resortId: varchar("resort_id").notNull().references(() => resorts.id),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  checkIn: timestamp("check_in").notNull(),
-  checkOut: timestamp("check_out").notNull(),
-  guests: integer("guests").notNull(),
-  totalPrice: integer("total_price").notNull(),
-  status: text("status").notNull().default("pending"),
-  createdAt: timestamp("created_at").defaultNow()
-});
-
-export const listings = pgTable("listings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  resortId: varchar("resort_id").notNull().references(() => resorts.id),
-  ownerId: varchar("owner_id").notNull().references(() => users.id),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  pricePerNight: integer("price_per_night").notNull(),
-  availableFrom: timestamp("available_from").notNull(),
-  availableTo: timestamp("available_to").notNull(),
-  maxGuests: integer("max_guests").notNull(),
-  isActive: boolean("is_active").notNull().default(true),
-  contractDocumentUrl: text("contract_document_url"),
-  contractVerificationStatus: text("contract_verification_status").notNull().default("pending"),
-  escrowStatus: text("escrow_status").notNull().default("none"),
-  ownershipVerified: boolean("ownership_verified").notNull().default(false),
-  escrowAccountId: text("escrow_account_id"),
-  salePrice: integer("sale_price"),
-  isForSale: boolean("is_for_sale").notNull().default(false),
-  createdAt: timestamp("created_at").defaultNow()
-});
-
-export const siteSettings = pgTable("site_settings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  key: text("key").notNull().unique(),
-  value: text("value").notNull(),
-  category: text("category").notNull().default("general"),
-  description: text("description"),
-  isEncrypted: boolean("is_encrypted").notNull().default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
-});
-
-export const propertyInquiries = pgTable("property_inquiries", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  email: text("email").notNull(),
-  phone: text("phone"),
-  propertyName: text("property_name").notNull(),
-  location: text("location").notNull(),
-  ownershipType: text("ownership_type").notNull(),
-  weekNumbers: text("week_numbers"),
-  askingPrice: integer("asking_price"),
-  motivation: text("motivation").notNull(),
-  additionalInfo: text("additional_info"),
-  status: text("status").notNull().default("new"),
-  createdAt: timestamp("created_at").defaultNow()
-});
-
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true
-});
-
-export const insertResortSchema = createInsertSchema(resorts).omit({
-  id: true,
-  createdAt: true,
-  reviewCount: true
-});
-
-export const insertReviewSchema = createInsertSchema(reviews).omit({
-  id: true,
-  createdAt: true
-});
-
-export const insertBookingSchema = createInsertSchema(bookings).omit({
-  id: true,
-  createdAt: true,
-  status: true
-});
-
-export const insertListingSchema = createInsertSchema(listings).omit({
-  id: true,
-  createdAt: true,
-  isActive: true,
-  contractVerificationStatus: true,
-  escrowStatus: true,
-  ownershipVerified: true
-});
-
-export const insertSiteSettingSchema = createInsertSchema(siteSettings).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-export const insertPropertyInquirySchema = createInsertSchema(propertyInquiries).omit({
-  id: true,
-  createdAt: true,
-  status: true
-});
-
-export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type Resort = typeof resorts.$inferSelect;
+
+export type User = InsertUser & {
+  id: string;
+  createdAt: Date;
+};
+
+// Resort Schema
+export const insertResortSchema = z.object({
+  name: z.string().min(1),
+  location: z.string().min(1),
+  description: z.string().min(1),
+  imageUrl: z.string().min(1),
+  amenities: z.array(z.string()),
+  rating: z.string(),
+  availableRentals: z.number().default(0),
+  priceMin: z.number(),
+  priceMax: z.number(),
+  isNewAvailability: z.boolean().default(false),
+  destination: z.string().min(1),
+});
+
 export type InsertResort = z.infer<typeof insertResortSchema>;
-export type Review = typeof reviews.$inferSelect;
+
+export type Resort = InsertResort & {
+  id: string;
+  reviewCount: number;
+  createdAt: Date;
+};
+
+// Review Schema
+export const insertReviewSchema = z.object({
+  resortId: z.string().min(1),
+  userId: z.string().min(1),
+  rating: z.number().min(1).max(5),
+  title: z.string().min(1),
+  content: z.string().min(1),
+});
+
 export type InsertReview = z.infer<typeof insertReviewSchema>;
-export type Booking = typeof bookings.$inferSelect;
+
+export type Review = InsertReview & {
+  id: string;
+  createdAt: Date;
+};
+
+// Booking Schema
+export const insertBookingSchema = z.object({
+  resortId: z.string().min(1),
+  userId: z.string().min(1),
+  checkIn: z.date(),
+  checkOut: z.date(),
+  guests: z.number().min(1),
+  totalPrice: z.number().min(0),
+});
+
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
-export type Listing = typeof listings.$inferSelect;
+
+export type Booking = InsertBooking & {
+  id: string;
+  status: string;
+  createdAt: Date;
+};
+
+// Listing Schema
+export const insertListingSchema = z.object({
+  resortId: z.string().min(1),
+  ownerId: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  pricePerNight: z.number().min(0),
+  availableFrom: z.date(),
+  availableTo: z.date(),
+  maxGuests: z.number().min(1),
+  contractDocumentUrl: z.string().optional(),
+  salePrice: z.number().optional(),
+  isForSale: z.boolean().default(false),
+});
+
 export type InsertListing = z.infer<typeof insertListingSchema>;
-export type SiteSetting = typeof siteSettings.$inferSelect;
+
+export type Listing = InsertListing & {
+  id: string;
+  isActive: boolean;
+  contractVerificationStatus: string;
+  escrowStatus: string;
+  ownershipVerified: boolean;
+  escrowAccountId: string | null;
+  createdAt: Date;
+};
+
+// Site Setting Schema
+export const insertSiteSettingSchema = z.object({
+  key: z.string().min(1),
+  value: z.string().min(1),
+  category: z.string().default("general"),
+  description: z.string().optional(),
+  isEncrypted: z.boolean().default(false),
+});
+
 export type InsertSiteSetting = z.infer<typeof insertSiteSettingSchema>;
-export type PropertyInquiry = typeof propertyInquiries.$inferSelect;
+
+export type SiteSetting = InsertSiteSetting & {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+// Property Inquiry Schema
+export const insertPropertyInquirySchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().optional(),
+  propertyName: z.string().min(1),
+  location: z.string().min(1),
+  ownershipType: z.string().min(1),
+  weekNumbers: z.string().optional(),
+  askingPrice: z.number().optional(),
+  motivation: z.string().min(1),
+  additionalInfo: z.string().optional(),
+});
+
 export type InsertPropertyInquiry = z.infer<typeof insertPropertyInquirySchema>;
+
+export type PropertyInquiry = InsertPropertyInquiry & {
+  id: string;
+  status: string;
+  createdAt: Date;
+};

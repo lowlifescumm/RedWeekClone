@@ -73,7 +73,7 @@ export class MemStorage implements IStorage {
     this.seedData().then(() => this.migrateUserData());
   }
 
-  private async seedData() {
+  async seedData() {
     // Seed resort data
     const seedResorts: Resort[] = [
       {
@@ -419,7 +419,8 @@ export class MemStorage implements IStorage {
       contractVerificationStatus: "pending",
       escrowStatus: "none",
       ownershipVerified: false,
-      contractDocumentUrl: insertListing.contractDocumentUrl || null,
+      escrowAccountId: null,
+      contractDocumentUrl: insertListing.contractDocumentUrl,
       createdAt: new Date() 
     };
     this.listings.set(id, listing);
@@ -439,6 +440,44 @@ export class MemStorage implements IStorage {
 
     this.listings.set(id, updatedListing);
     return updatedListing;
+  }
+
+  // Site Settings methods (stub implementations for MemStorage)
+  async getSiteSetting(key: string): Promise<SiteSetting | undefined> {
+    return undefined;
+  }
+
+  async getSiteSettingsByCategory(category: string): Promise<SiteSetting[]> {
+    return [];
+  }
+
+  async getAllSiteSettings(): Promise<SiteSetting[]> {
+    return [];
+  }
+
+  async setSiteSetting(setting: InsertSiteSetting): Promise<SiteSetting> {
+    throw new Error("Site settings not supported in MemStorage");
+  }
+
+  async deleteSiteSetting(key: string): Promise<boolean> {
+    return false;
+  }
+
+  // Property Inquiry methods (stub implementations for MemStorage)
+  async getPropertyInquiries(): Promise<PropertyInquiry[]> {
+    return [];
+  }
+
+  async getPropertyInquiry(id: string): Promise<PropertyInquiry | undefined> {
+    return undefined;
+  }
+
+  async createPropertyInquiry(inquiry: InsertPropertyInquiry): Promise<PropertyInquiry> {
+    throw new Error("Property inquiries not supported in MemStorage");
+  }
+
+  async updatePropertyInquiry(id: string, updateData: Partial<Omit<PropertyInquiry, 'id' | 'createdAt'>>): Promise<PropertyInquiry | undefined> {
+    return undefined;
   }
 }
 
