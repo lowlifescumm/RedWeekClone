@@ -2,12 +2,13 @@ import { MongoClient } from 'mongodb';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
-// Get connection string from environment or use default
+// Use DATABASE_URL from environment - no hardcoded credentials
 // Note: Make sure MongoDB Atlas Network Access allows your IP address
-const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || 'mongodb+srv://ethanfitzhenry_db_user:bDDTtKUKfXNTN7qZ@cluster0.cq9y4vu.mongodb.net/redweek_clone?retryWrites=true&w=majority&appName=Cluster0';
+const MONGODB_URI = process.env.DATABASE_URL;
 
 if (!MONGODB_URI) {
-  console.error('MONGODB_URI or DATABASE_URL must be set');
+  console.error('DATABASE_URL environment variable must be set');
+  console.error('Please set it in your environment or .env file');
   process.exit(1);
 }
 

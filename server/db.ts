@@ -1,10 +1,11 @@
 import { MongoClient, Db, MongoClientOptions } from 'mongodb';
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL || 'mongodb+srv://ethanfitzhenry_db_user:bDDTtKUKfXNTN7qZ@cluster0.cq9y4vu.mongodb.net/?appName=Cluster0';
+// Use DATABASE_URL from environment - no hardcoded credentials
+const MONGODB_URI = process.env.DATABASE_URL;
 
 if (!MONGODB_URI) {
   throw new Error(
-    "MONGODB_URI or DATABASE_URL must be set. Did you forget to provision a database?",
+    "DATABASE_URL environment variable must be set. Please configure it in your environment.",
   );
 }
 

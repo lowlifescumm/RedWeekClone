@@ -11,13 +11,19 @@ services:
         value: production
       - key: SESSION_SECRET
         generateValue: true
-      # Add your storage/database vars below as needed
-      # - key: DATABASE_URL
-      #   value: postgres://user:pass@host:5432/db
-      # - key: OBJECT_STORAGE_BUCKET
-      #   value: your-bucket
-      # - key: OBJECT_STORAGE_KEY
-      #   value: your-key
-      # - key: OBJECT_STORAGE_SECRET
-      #   value: your-secret
+      # Database configuration
+      - key: DATABASE_URL
+        sync: false  # Set this in Render dashboard with your MongoDB connection string
+      # Google Cloud Storage configuration
+      - key: OBJECT_STORAGE_BUCKET
+        sync: false  # Set this in Render dashboard with your GCS bucket name
+      - key: GCS_PROJECT_ID
+        sync: false  # Set this in Render dashboard with your GCS project ID
+      - key: GCS_CREDENTIALS
+        sync: false  # Set this in Render dashboard with your GCS service account JSON (as string)
+      # Optional: Object storage paths
+      - key: PUBLIC_OBJECT_SEARCH_PATHS
+        value: public
+      - key: PRIVATE_OBJECT_DIR
+        value: .private
 
